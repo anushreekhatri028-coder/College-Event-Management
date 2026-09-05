@@ -1,13 +1,13 @@
-const express = require("express");
+const dotenv = require("dotenv");
+const app = require("./src/app");
+const connectDB = require("./src/db/db");
 
-const app = express();
+dotenv.config();
 
-const PORT = 5000;
+connectDB();
 
-app.get("/", (req, res) => {
-    res.send("College Event Management System API is running!");
-});
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
