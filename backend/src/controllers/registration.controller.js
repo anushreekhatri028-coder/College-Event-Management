@@ -1,0 +1,124 @@
+const Registration = require("../models/registration.model");
+const Event = require("../models/event.model");
+
+const registerForEvent = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+
+        const event = await Event.findById(eventId);
+
+        if (!event) {
+            return res.status(404).json({
+                message: "Event not found"
+            });
+        }
+
+        const existingRegistration =
+            await Registration.findOne({
+                student: req.user.userId,
+                event: eventId
+            });
+
+        if (existingRegistration) {
+            return res.status(400).json({
+                message: "Already registered for this event"
+            });
+        }
+
+        const registrationCount =
+            await Registration.countDocuments({
+                event: eventId
+            });
+
+        if (registrationCount >= event.capacity) {
+            return res.status(400).json({
+                message: "Event is full"
+            });
+        }
+
+        const registration = await Registration.create({
+            student: req.user.userId,
+            event: eventId
+        });
+
+        res.status(201).json({
+            message: "Registered successfully",
+            registration
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
+
+const getParticipants = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+
+        const event = await Event.findById(eventId);
+
+        if (!event) {
+            return res.status(404).json({
+                message: "Event not found"
+            });
+        }
+
+        const registrations =
+            await Registration.find({
+                event: eventId
+            }).populate(
+                "student",
+                "name email"
+            );
+
+        res.status(200).json({
+            event: event.title,
+            totalParticipants: registrations.length,
+            participants: registrations
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
+
+const cancelRegistration = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+
+        const registration =
+            await Registration.findOne({
+                student: req.user.userId,
+                event: eventId
+            });
+
+        if (!registration) {
+            return res.status(404).json({
+                message: "Registration not found"
+            });
+        }
+
+        await Registration.findByIdAndDelete(
+            registration._id
+        );
+
+        res.status(200).json({
+            message: "Registration cancelled successfully"
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
+
+module.exports = {
+    registerForEvent,
+    getParticipants,
+    cancelRegistration
+};
