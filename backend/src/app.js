@@ -5,6 +5,7 @@ const userRoutes = require("./routes/user.routes");
 const eventRoutes = require("./routes/event.routes");
 const registrationRoutes =
     require("./routes/registration.routes");
+const clubRoutes = require("./routes/club.routes");
 
 const app = express();
 
@@ -23,5 +24,6 @@ app.use(
     "/api",
     registrationRoutes
 );
+app.use("/api/clubs", clubRoutes);
 
 module.exports = app;
