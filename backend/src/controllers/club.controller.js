@@ -1,4 +1,5 @@
 const Club = require("../models/club.model");
+const Event = require("../models/event.model");
 
 const createClub = async (req, res) => {
     try {
@@ -61,7 +62,42 @@ const getClubs = async (req, res) => {
     }
 };
 
+const getClubWithEvents = async (req, res) => {
+    try {
+        const club = await Club.findById(req.params.id)
+            .populate(
+                "president",
+                "name email role"
+            )
+            .populate(
+                "facultyCoordinator",
+                "name email role"
+            );
+
+        if (!club) {
+            return res.status(404).json({
+                message: "Club not found"
+            });
+        }
+
+        const events = await Event.find({
+            club: club._id
+        });
+
+        res.status(200).json({
+            club,
+            events
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
+
 module.exports = {
     createClub,
-    getClubs
+    getClubs,
+    getClubWithEvents
 };

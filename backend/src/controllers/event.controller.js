@@ -1,5 +1,7 @@
 const Event = require("../models/event.model");
+const Club = require("../models/club.model");
 
+// CREATE EVENT
 const createEvent = async (req, res) => {
     try {
         const {
@@ -8,22 +10,35 @@ const createEvent = async (req, res) => {
             date,
             venue,
             category,
-            capacity
+            capacity,
+            club
         } = req.body;
 
+        // Check required fields
         if (
             !title ||
             !description ||
             !date ||
             !venue ||
             !category ||
-            !capacity
+            !capacity ||
+            !club
         ) {
             return res.status(400).json({
                 message: "All fields are required"
             });
         }
 
+        // Check if club exists
+        const existingClub = await Club.findById(club);
+
+        if (!existingClub) {
+            return res.status(404).json({
+                message: "Club not found"
+            });
+        }
+
+        // Create event
         const event = await Event.create({
             title,
             description,
@@ -31,6 +46,7 @@ const createEvent = async (req, res) => {
             venue,
             category,
             capacity,
+            club,
             organizer: req.user.userId
         });
 
@@ -46,10 +62,13 @@ const createEvent = async (req, res) => {
     }
 };
 
+
+// GET ALL EVENTS
 const getEvents = async (req, res) => {
     try {
         const events = await Event.find()
-            .populate("organizer", "name email role");
+            .populate("organizer", "name email role")
+            .populate("club", "name category");
 
         res.status(200).json({
             events
@@ -62,6 +81,8 @@ const getEvents = async (req, res) => {
     }
 };
 
+
+// UPDATE EVENT
 const updateEvent = async (req, res) => {
     try {
         const event = await Event.findById(req.params.id);
@@ -72,8 +93,11 @@ const updateEvent = async (req, res) => {
             });
         }
 
-        if (event.organizer.toString() !== req.user.userId &&
-            !["faculty", "dean", "superadmin"].includes(req.user.role)) {
+        // Check permission
+        if (
+            event.organizer.toString() !== req.user.userId &&
+            !["faculty", "dean", "superadmin"].includes(req.user.role)
+        ) {
             return res.status(403).json({
                 message: "You are not allowed to update this event"
             });
@@ -100,6 +124,8 @@ const updateEvent = async (req, res) => {
     }
 };
 
+
+// DELETE EVENT
 const deleteEvent = async (req, res) => {
     try {
         const event = await Event.findById(req.params.id);
@@ -110,8 +136,11 @@ const deleteEvent = async (req, res) => {
             });
         }
 
-        if (event.organizer.toString() !== req.user.userId &&
-            !["faculty", "dean", "superadmin"].includes(req.user.role)) {
+        // Check permission
+        if (
+            event.organizer.toString() !== req.user.userId &&
+            !["faculty", "dean", "superadmin"].includes(req.user.role)
+        ) {
             return res.status(403).json({
                 message: "You are not allowed to delete this event"
             });
@@ -130,9 +159,43 @@ const deleteEvent = async (req, res) => {
     }
 };
 
+
+// GET EVENTS OF A PARTICULAR CLUB
+const getClubEvents = async (req, res) => {
+    try {
+        const { clubId } = req.params;
+
+        // Check if club exists
+        const existingClub = await Club.findById(clubId);
+
+        if (!existingClub) {
+            return res.status(404).json({
+                message: "Club not found"
+            });
+        }
+
+        const events = await Event.find({
+            club: clubId
+        })
+            .populate("organizer", "name email role")
+            .populate("club", "name category");
+
+        res.status(200).json({
+            events
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
+
+
 module.exports = {
     createEvent,
     getEvents,
     updateEvent,
-    deleteEvent
+    deleteEvent,
+    getClubEvents
 };

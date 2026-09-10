@@ -37,7 +37,12 @@ const eventSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             required: true
-        }
+        },
+        club: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Club",
+            required: true
+}
     },
     {
         timestamps: true

@@ -2,7 +2,8 @@ const express = require("express");
 
 const {
     createClub,
-    getClubs
+    getClubs,
+    getClubWithEvents
 } = require("../controllers/club.controller");
 
 const protect = require("../middleware/auth.middleware");
@@ -18,5 +19,6 @@ router.post(
 );
 
 router.get("/", getClubs);
+router.get("/:id", getClubWithEvents);
 
 module.exports = router
