@@ -37,6 +37,14 @@ const createEvent = async (req, res) => {
                 message: "Club not found"
             });
         }
+        if (
+            req.user.role === "organizer" &&
+            existingClub.president.toString() !== req.user.userId
+        ) {
+            return res.status(403).json({
+                message: "You can only create events for your own club"
+            });
+        }
 
         // Create event
         const event = await Event.create({
@@ -93,19 +101,45 @@ const updateEvent = async (req, res) => {
             });
         }
 
-        // Check permission
-        if (
-            event.organizer.toString() !== req.user.userId &&
-            !["faculty", "dean", "superadmin"].includes(req.user.role)
-        ) {
-            return res.status(403).json({
-                message: "You are not allowed to update this event"
+        // Find the club of this event
+        const club = await Club.findById(event.club);
+
+        if (!club) {
+            return res.status(404).json({
+                message: "Club not found"
             });
         }
 
+        // Check if organizer/president belongs to this club
+        if (
+            req.user.role === "organizer" &&
+            club.president.toString() !== req.user.userId
+        ) {
+            return res.status(403).json({
+                message: "You can only update events of your own club"
+            });
+        }
+
+        // Only update these fields
+        const {
+            title,
+            description,
+            date,
+            venue,
+            category,
+            capacity
+        } = req.body;
+
         const updatedEvent = await Event.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            {
+                title,
+                description,
+                date,
+                venue,
+                category,
+                capacity
+            },
             {
                 new: true,
                 runValidators: true
@@ -124,28 +158,39 @@ const updateEvent = async (req, res) => {
     }
 };
 
-
 // DELETE EVENT
 const deleteEvent = async (req, res) => {
     try {
         const event = await Event.findById(req.params.id);
 
+        // Check if event exists
         if (!event) {
             return res.status(404).json({
                 message: "Event not found"
             });
         }
 
-        // Check permission
-        if (
-            event.organizer.toString() !== req.user.userId &&
-            !["faculty", "dean", "superadmin"].includes(req.user.role)
-        ) {
-            return res.status(403).json({
-                message: "You are not allowed to delete this event"
+        // Find the club to which this event belongs
+        const club = await Club.findById(event.club);
+
+        // Check if club exists
+        if (!club) {
+            return res.status(404).json({
+                message: "Club not found"
             });
         }
 
+        // Check permission for organizer/president
+        if (
+            req.user.role === "organizer" &&
+            club.president.toString() !== req.user.userId
+        ) {
+            return res.status(403).json({
+                message: "You can only delete events of your own club"
+            });
+        }
+
+        // Delete event
         await Event.findByIdAndDelete(req.params.id);
 
         res.status(200).json({
