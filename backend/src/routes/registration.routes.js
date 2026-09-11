@@ -3,7 +3,8 @@ const express = require("express");
 const {
     registerForEvent,
     getParticipants,
-    cancelRegistration
+    cancelRegistration,
+    getMyRegistrations
 } = require("../controllers/registration.controller");
 
 const protect = require("../middleware/auth.middleware");
@@ -35,6 +36,13 @@ router.delete(
     protect,
     authorize("student"),
     cancelRegistration
+);
+
+router.get(
+    "/registrations/my",
+    protect,
+    authorize("student"),
+    getMyRegistrations
 );
 
 module.exports = router;

@@ -117,8 +117,37 @@ const cancelRegistration = async (req, res) => {
     }
 };
 
+const getMyRegistrations = async (req, res) => {
+    try {
+        const registrations = await Registration.find({
+            student: req.user.userId
+        })
+            .populate(
+                "event",
+                "title description date venue category capacity club"
+            )
+            .populate({
+                path: "event",
+                populate: {
+                    path: "club",
+                    select: "name category"
+                }
+            });
+
+        res.status(200).json({
+            totalRegistrations: registrations.length,
+            registrations
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
 module.exports = {
     registerForEvent,
     getParticipants,
-    cancelRegistration
+    cancelRegistration,
+    getMyRegistrations
 };
