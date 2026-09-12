@@ -6,7 +6,8 @@ const {
     updateEvent,
     deleteEvent,
     getClubEvents,
-    searchEvents
+    searchEvents,
+    getUpcomingEvents
 } = require("../controllers/event.controller");
 
 const protect = require("../middleware/auth.middleware");
@@ -36,6 +37,7 @@ router.delete(
 );
 
 router.get("/", getEvents);
+router.get("/upcoming", getUpcomingEvents);
 router.get("/search", searchEvents);
 router.get("/club/:clubId", getClubEvents);
 

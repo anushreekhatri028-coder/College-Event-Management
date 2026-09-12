@@ -4,7 +4,8 @@ const {
     registerForEvent,
     getParticipants,
     cancelRegistration,
-    getMyRegistrations
+    getMyRegistrations,
+    getDashboardData
 } = require("../controllers/registration.controller");
 
 const protect = require("../middleware/auth.middleware");
@@ -43,6 +44,13 @@ router.get(
     protect,
     authorize("student"),
     getMyRegistrations
+);
+
+router.get(
+    "/dashboard",
+    protect,
+    authorize("student"),
+    getDashboardData
 );
 
 module.exports = router;

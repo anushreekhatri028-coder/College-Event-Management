@@ -294,6 +294,27 @@ const searchEvents = async (req, res) => {
     }
 };
 
+const getUpcomingEvents = async (req, res) => {
+    try {
+        const events = await Event.find({
+            date: { $gte: new Date() }
+        })
+            .populate("organizer", "name email role")
+            .populate("club", "name category")
+            .sort({ date: 1 });
+
+        res.status(200).json({
+            totalEvents: events.length,
+            events
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
+
 
 module.exports = {
     createEvent,
@@ -301,5 +322,6 @@ module.exports = {
     updateEvent,
     deleteEvent,
     getClubEvents,
-    searchEvents
+    searchEvents,
+    getUpcomingEvents
 };

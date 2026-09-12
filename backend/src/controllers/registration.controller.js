@@ -145,9 +145,43 @@ const getMyRegistrations = async (req, res) => {
         });
     }
 };
+
+const getDashboardData = async (req, res) => {
+    try {
+        const registrations = await Registration.find({
+            student: req.user.userId
+        })
+            .populate({
+                path: "event",
+                populate: {
+                    path: "club",
+                    select: "name category"
+                }
+            })
+            .sort({ createdAt: -1 });
+
+        const upcomingRegistrations = registrations.filter(
+            (registration) =>
+                registration.event &&
+                new Date(registration.event.date) >= new Date()
+        );
+
+        res.status(200).json({
+            totalRegistrations: registrations.length,
+            upcomingRegistrations: upcomingRegistrations.length,
+            registrations
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
 module.exports = {
     registerForEvent,
     getParticipants,
     cancelRegistration,
-    getMyRegistrations
+    getMyRegistrations,
+    getDashboardData
 };
