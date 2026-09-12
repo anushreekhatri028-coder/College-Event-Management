@@ -236,11 +236,70 @@ const getClubEvents = async (req, res) => {
     }
 };
 
+const searchEvents = async (req, res) => {
+    try {
+        const {
+            search,
+            category,
+            club,
+            date
+        } = req.query;
+
+        let filter = {};
+
+        // Search by title
+        if (search) {
+            filter.title = {
+                $regex: search,
+                $options: "i"
+            };
+        }
+
+        // Filter by category
+        if (category) {
+            filter.category = category;
+        }
+
+        // Filter by club
+        if (club) {
+            filter.club = club;
+        }
+
+        // Filter by date
+        if (date) {
+            filter.date = {
+                $gte: new Date(date),
+                $lt: new Date(
+                    new Date(date).setDate(
+                        new Date(date).getDate() + 1
+                    )
+                )
+            };
+        }
+
+        const events = await Event.find(filter)
+            .populate("organizer", "name email role")
+            .populate("club", "name category")
+            .sort({ date: 1 });
+
+        res.status(200).json({
+            totalEvents: events.length,
+            events
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
+
 
 module.exports = {
     createEvent,
     getEvents,
     updateEvent,
     deleteEvent,
-    getClubEvents
+    getClubEvents,
+    searchEvents
 };
