@@ -315,6 +315,29 @@ const getUpcomingEvents = async (req, res) => {
     }
 };
 
+const getEventById = async (req, res) => {
+    try {
+        const event = await Event.findById(req.params.id)
+            .populate("organizer", "name email role")
+            .populate("club", "name category");
+
+        if (!event) {
+            return res.status(404).json({
+                message: "Event not found"
+            });
+        }
+
+        res.status(200).json({
+            event
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
+
 
 module.exports = {
     createEvent,
@@ -323,5 +346,6 @@ module.exports = {
     deleteEvent,
     getClubEvents,
     searchEvents,
-    getUpcomingEvents
+    getUpcomingEvents,
+    getEventById
 };

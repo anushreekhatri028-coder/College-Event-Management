@@ -5,6 +5,7 @@ const registerForEvent = async (req, res) => {
     try {
         const { eventId } = req.params;
 
+        // Check if event exists
         const event = await Event.findById(eventId);
 
         if (!event) {
@@ -13,29 +14,31 @@ const registerForEvent = async (req, res) => {
             });
         }
 
-        const existingRegistration =
-            await Registration.findOne({
-                student: req.user.userId,
-                event: eventId
-            });
+        // Check if student already registered
+        const existingRegistration = await Registration.findOne({
+            student: req.user.userId,
+            event: eventId
+        });
 
         if (existingRegistration) {
             return res.status(400).json({
-                message: "Already registered for this event"
+                message: "You are already registered for this event"
             });
         }
 
-        const registrationCount =
-            await Registration.countDocuments({
-                event: eventId
-            });
+        // Count current registrations
+        const registrationCount = await Registration.countDocuments({
+            event: eventId
+        });
 
+        // Check capacity
         if (registrationCount >= event.capacity) {
             return res.status(400).json({
                 message: "Event is full"
             });
         }
 
+        // Create registration
         const registration = await Registration.create({
             student: req.user.userId,
             event: eventId
