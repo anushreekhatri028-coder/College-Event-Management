@@ -14,6 +14,11 @@ const {
 const protect = require("../middleware/auth.middleware");
 const authorize = require("../middleware/role.middleware");
 
+const {
+    approveEvent,
+    rejectEvent
+} = require("../controllers/event.controller");
+
 const router = express.Router();
 
 router.post(
@@ -41,7 +46,31 @@ router.get("/", getEvents);
 router.get("/upcoming", getUpcomingEvents);
 router.get("/search", searchEvents);
 router.get("/club/:clubId", getClubEvents);
+
+router.get(
+    "/pending",
+    protect,
+    authorize("faculty", "dean", "superadmin"),
+    getPendingEvents
+);
+
+router.patch(
+    "/:id/approve",
+    protect,
+    authorize("faculty", "dean", "superadmin"),
+    approveEvent
+);
+
+router.patch(
+    "/:id/reject",
+    protect,
+    authorize("faculty", "dean", "superadmin"),
+    rejectEvent
+);
+
+
 router.get("/:id", getEventById);
+
 
 
 module.exports = router;

@@ -42,7 +42,12 @@ const eventSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "Club",
             required: true
-}
+        },
+        approvalStatus: {
+            type: String,
+            enum: ["pending", "approved", "rejected"],
+            default: "pending"
+        }
     },
     {
         timestamps: true

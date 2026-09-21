@@ -55,7 +55,8 @@ const createEvent = async (req, res) => {
             category,
             capacity,
             club,
-            organizer: req.user.userId
+            organizer: req.user.userId,
+            approvalStatus: "pending"
         });
 
         res.status(201).json({
@@ -74,7 +75,15 @@ const createEvent = async (req, res) => {
 // GET ALL EVENTS
 const getEvents = async (req, res) => {
     try {
-        const events = await Event.find()
+
+        const filter = {};
+
+        // Students can see only approved events
+        if (req.user.role === "student") {
+            filter.approvalStatus = "approved";
+        }
+
+        const events = await Event.find(filter)
             .populate("organizer", "name email role")
             .populate("club", "name category");
 
@@ -339,6 +348,95 @@ const getEventById = async (req, res) => {
 };
 
 
+const approveEvent = async (req, res) => {
+    try {
+
+        const event = await Event.findById(req.params.id);
+
+        if (!event) {
+            return res.status(404).json({
+                message: "Event not found"
+            });
+        }
+
+        if (event.approvalStatus === "approved") {
+            return res.status(400).json({
+                message: "Event is already approved"
+            });
+        }
+
+        event.approvalStatus = "approved";
+
+        await event.save();
+
+        res.status(200).json({
+            message: "Event approved successfully",
+            event
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
+
+const rejectEvent = async (req, res) => {
+    try {
+
+        const event = await Event.findById(req.params.id);
+
+        if (!event) {
+            return res.status(404).json({
+                message: "Event not found"
+            });
+        }
+
+        if (event.approvalStatus === "rejected") {
+            return res.status(400).json({
+                message: "Event is already rejected"
+            });
+        }
+
+        event.approvalStatus = "rejected";
+
+        await event.save();
+
+        res.status(200).json({
+            message: "Event rejected successfully",
+            event
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
+
+const getPendingEvents = async (req, res) => {
+    try {
+
+        const events = await Event.find({
+            approvalStatus: "pending"
+        })
+            .populate("organizer", "name email role")
+            .populate("club", "name category")
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            totalPending: events.length,
+            events
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
+
+
 module.exports = {
     createEvent,
     getEvents,
@@ -347,5 +445,8 @@ module.exports = {
     getClubEvents,
     searchEvents,
     getUpcomingEvents,
-    getEventById
+    getEventById,
+    approveEvent,
+    rejectEvent,
+    getPendingEvents
 };
