@@ -7,6 +7,8 @@ const registrationRoutes =
     require("./routes/registration.routes");
 const clubRoutes = require("./routes/club.routes");
 const adminRoutes = require("./routes/admin.routes");
+const notificationRoutes =
+    require("./routes/notification.routes");
 
 const app = express();
 
@@ -27,5 +29,9 @@ app.use(
 );
 app.use("/api/clubs", clubRoutes);
 app.use("/api/admin", adminRoutes);
+app.use(
+    "/api/notifications",
+    notificationRoutes
+);
 
 module.exports = app;

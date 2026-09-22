@@ -1,5 +1,7 @@
 const Event = require("../models/event.model");
 const Club = require("../models/club.model");
+const Notification =
+    require("../models/notification.model");
 
 // CREATE EVENT
 const createEvent = async (req, res) => {
@@ -369,6 +371,12 @@ const approveEvent = async (req, res) => {
 
         await event.save();
 
+        await Notification.create({
+           user: event.organizer,
+           message: `Your event "${event.title}" has been approved`,
+           type: "event_approved"
+        });
+
         res.status(200).json({
             message: "Event approved successfully",
             event
@@ -401,6 +409,12 @@ const rejectEvent = async (req, res) => {
         event.approvalStatus = "rejected";
 
         await event.save();
+
+        await Notification.create({
+           user: event.organizer,
+           message: `Your event "${event.title}" has been rejected`,
+           type: "event_rejected"
+        });
 
         res.status(200).json({
             message: "Event rejected successfully",

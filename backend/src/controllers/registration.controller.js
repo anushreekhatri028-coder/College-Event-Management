@@ -1,5 +1,7 @@
 const Registration = require("../models/registration.model");
 const Event = require("../models/event.model");
+const Notification =
+    require("../models/notification.model");
 
 const registerForEvent = async (req, res) => {
     try {
@@ -42,6 +44,12 @@ const registerForEvent = async (req, res) => {
         const registration = await Registration.create({
             student: req.user.userId,
             event: eventId
+        });
+
+        await Notification.create({
+            user: req.user.userId,
+            message: `You successfully registered for ${event.title}`,
+            type: "registration"
         });
 
         res.status(201).json({
