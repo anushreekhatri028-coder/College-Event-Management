@@ -6,9 +6,8 @@ const {
     getAdminDashboard,
     getPopularEvents
 } = require("../controllers/admin.controller");
-
-const { protect } = require("../middleware/auth.middleware");
-const { authorize } = require("../middleware/role.middleware");
+const protect  = require("../middleware/auth.middleware");
+const authorize  = require("../middleware/role.middleware");
 
 router.get(
     "/dashboard",

@@ -8,7 +8,8 @@ const {
     getClubEvents,
     searchEvents,
     getUpcomingEvents,
-    getEventById
+    getEventById,
+    getPendingEvents
 } = require("../controllers/event.controller");
 
 const protect = require("../middleware/auth.middleware");
