@@ -11,6 +11,7 @@ const notificationRoutes =
     require("./routes/notification.routes");
 const attendanceRoutes =
     require("./routes/attendance.routes");
+const feedbackRoutes = require("./routes/feedback.routes");
 
 const app = express();
 
@@ -40,5 +41,7 @@ app.use(
     "/api/attendance",
     attendanceRoutes
 );
+
+app.use("/api/feedback", feedbackRoutes);
 
 module.exports = app;
