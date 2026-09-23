@@ -43,7 +43,11 @@ router.delete(
     deleteEvent
 );
 
-router.get("/", getEvents);
+router.get(
+    "/",
+    protect,
+    getEvents
+);
 router.get("/upcoming", getUpcomingEvents);
 router.get("/search", searchEvents);
 router.get("/club/:clubId", getClubEvents);

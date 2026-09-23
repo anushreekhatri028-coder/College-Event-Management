@@ -77,6 +77,15 @@ const createEvent = async (req, res) => {
 // GET ALL EVENTS
 const getEvents = async (req, res) => {
     try {
+        const {
+            page = 1,
+            limit = 10,
+            search,
+            category,
+            club,
+            status,
+            sort = "date"
+        } = req.query;
 
         const filter = {};
 
@@ -85,11 +94,75 @@ const getEvents = async (req, res) => {
             filter.approvalStatus = "approved";
         }
 
+        // Search
+        if (search) {
+            filter.title = {
+                $regex: search,
+                $options: "i"
+            };
+        }
+
+        // Category
+        if (category) {
+            filter.category = category;
+        }
+
+        // Club
+        if (club) {
+            filter.club = club;
+        }
+
+        // Approval status
+        if (status && req.user.role !== "student") {
+            filter.approvalStatus = status;
+        }
+
+        // ⭐ ADD THIS HERE
+        // Upcoming / Past events
+        if (req.query.time === "upcoming") {
+            filter.date = {
+                $gte: new Date()
+            };
+        }
+
+        if (req.query.time === "past") {
+            filter.date = {
+                $lt: new Date()
+            };
+        }
+
+        // Pagination
+        const skip = (Number(page) - 1) * Number(limit);
+
+        const totalEvents = await Event.countDocuments(filter);
+
+        // Sorting
+        let sortOption = {};
+
+        if (sort === "date") {
+            sortOption = { date: 1 };
+        } else if (sort === "newest") {
+            sortOption = { createdAt: -1 };
+        } else if (sort === "oldest") {
+            sortOption = { createdAt: 1 };
+        }
+
         const events = await Event.find(filter)
             .populate("organizer", "name email role")
-            .populate("club", "name category");
+            .populate("club", "name category")
+            .sort(sortOption)
+            .skip(skip)
+            .limit(Number(limit));
+
+        const totalPages = Math.ceil(
+            totalEvents / Number(limit)
+        );
 
         res.status(200).json({
+            currentPage: Number(page),
+            limit: Number(limit),
+            totalEvents,
+            totalPages,
             events
         });
 
