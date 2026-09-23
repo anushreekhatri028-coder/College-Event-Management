@@ -9,7 +9,8 @@ const {
     searchEvents,
     getUpcomingEvents,
     getEventById,
-    getPendingEvents
+    getPendingEvents,
+    cancelEvent
 } = require("../controllers/event.controller");
 
 const protect = require("../middleware/auth.middleware");
@@ -71,6 +72,18 @@ router.patch(
     protect,
     authorize("faculty", "dean", "superadmin"),
     rejectEvent
+);
+
+router.patch(
+    "/:id/cancel",
+    protect,
+    authorize(
+        "organizer",
+        "faculty",
+        "dean",
+        "superadmin"
+    ),
+    cancelEvent
 );
 
 

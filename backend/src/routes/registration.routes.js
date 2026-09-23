@@ -53,4 +53,11 @@ router.get(
     getDashboardData
 );
 
+router.delete(
+    "/event/:eventId",
+    protect,
+    authorize("student"),
+    cancelRegistration
+);
+
 module.exports = router;

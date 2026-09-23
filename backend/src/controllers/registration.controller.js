@@ -15,6 +15,11 @@ const registerForEvent = async (req, res) => {
                 message: "Event not found"
             });
         }
+        if (event.status === "cancelled") {
+            return res.status(400).json({
+            message: "Registration is closed because this event is cancelled"
+            });
+        }
 
         // Check if student already registered
         const existingRegistration = await Registration.findOne({
@@ -101,11 +106,10 @@ const cancelRegistration = async (req, res) => {
     try {
         const { eventId } = req.params;
 
-        const registration =
-            await Registration.findOne({
-                student: req.user.userId,
-                event: eventId
-            });
+        const registration = await Registration.findOne({
+            student: req.user.userId,
+            event: eventId
+        });
 
         if (!registration) {
             return res.status(404).json({
@@ -127,7 +131,6 @@ const cancelRegistration = async (req, res) => {
         });
     }
 };
-
 const getMyRegistrations = async (req, res) => {
     try {
         const registrations = await Registration.find({

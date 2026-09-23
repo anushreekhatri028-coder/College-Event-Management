@@ -523,6 +523,67 @@ const getPendingEvents = async (req, res) => {
     }
 };
 
+const cancelEvent = async (req, res) => {
+    try {
+        const { reason } = req.body;
+
+        const event = await Event.findById(req.params.id);
+
+        if (!event) {
+            return res.status(404).json({
+                message: "Event not found"
+            });
+        }
+
+        if (event.status === "cancelled") {
+            return res.status(400).json({
+                message: "Event is already cancelled"
+            });
+        }
+
+        if (!reason) {
+            return res.status(400).json({
+                message: "Cancellation reason is required"
+            });
+        }
+
+        // Organizer can cancel only their own club's event
+        if (req.user.role === "organizer") {
+
+            const club = await Club.findById(event.club);
+
+            if (!club) {
+                return res.status(404).json({
+                    message: "Club not found"
+                });
+            }
+
+            if (
+                club.president.toString() !== req.user.userId
+            ) {
+                return res.status(403).json({
+                    message: "You can only cancel your own club's events"
+                });
+            }
+        }
+
+        event.status = "cancelled";
+        event.cancellationReason = reason;
+
+        await event.save();
+
+        res.status(200).json({
+            message: "Event cancelled successfully",
+            event
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
+
 
 module.exports = {
     createEvent,
@@ -535,5 +596,6 @@ module.exports = {
     getEventById,
     approveEvent,
     rejectEvent,
-    getPendingEvents
+    getPendingEvents,
+    cancelEvent
 };

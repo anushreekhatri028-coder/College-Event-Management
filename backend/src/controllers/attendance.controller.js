@@ -16,6 +16,12 @@ const checkIn = async (req, res) => {
             });
         }
 
+        if (event.status === "cancelled") {
+            return res.status(400).json({
+               message: "Attendance is not available because this event is cancelled"
+            });
+        }
+
         // Event must be approved
         if (event.approvalStatus !== "approved") {
             return res.status(400).json({

@@ -47,6 +47,16 @@ const eventSchema = new mongoose.Schema(
             type: String,
             enum: ["pending", "approved", "rejected"],
             default: "pending"
+        },
+        status: {
+            type: String,
+            enum: ["scheduled", "cancelled", "completed"],
+            default: "scheduled"
+        },
+
+        cancellationReason: {
+            type: String,
+            default: null
         }
     },
     {
