@@ -75,6 +75,7 @@ const createEvent = async (req, res) => {
 
 
 // GET ALL EVENTS
+
 const getEvents = async (req, res) => {
     try {
         const {
@@ -84,9 +85,70 @@ const getEvents = async (req, res) => {
             category,
             club,
             status,
-            sort = "date"
+            eventStatus,
+            sort = "date",
+            time
         } = req.query;
 
+        // 1. Validate pagination
+        const pageNumber = Number(page);
+        const limitNumber = Number(limit);
+
+        if (
+            !Number.isInteger(pageNumber) ||
+            pageNumber < 1 ||
+            !Number.isInteger(limitNumber) ||
+            limitNumber < 1 ||
+            limitNumber > 100
+        ) {
+            return res.status(400).json({
+                message:
+                    "Page must be positive and limit must be between 1 and 100"
+            });
+        }
+
+        // 2. Validate event lifecycle status
+        const allowedEventStatuses = [
+            "scheduled",
+            "cancelled",
+            "completed"
+        ];
+
+        if (
+            eventStatus &&
+            !allowedEventStatuses.includes(eventStatus)
+        ) {
+            return res.status(400).json({
+                message: "Invalid event status",
+                allowedStatuses: allowedEventStatuses
+            });
+        }
+
+        // 3. Validate approval status
+        const allowedApprovalStatuses = [
+            "pending",
+            "approved",
+            "rejected"
+        ];
+
+        if (
+            status &&
+            !allowedApprovalStatuses.includes(status)
+        ) {
+            return res.status(400).json({
+                message: "Invalid approval status",
+                allowedStatuses: allowedApprovalStatuses
+            });
+        }
+
+        // 4. Validate time filter
+        if (time && !["upcoming", "past"].includes(time)) {
+            return res.status(400).json({
+                message: "Time must be upcoming or past"
+            });
+        }
+
+        // 5. Build database filter
         const filter = {};
 
         // Students can see only approved events
@@ -94,7 +156,7 @@ const getEvents = async (req, res) => {
             filter.approvalStatus = "approved";
         }
 
-        // Search
+        // Search by event title
         if (search) {
             filter.title = {
                 $regex: search,
@@ -102,41 +164,40 @@ const getEvents = async (req, res) => {
             };
         }
 
-        // Category
+        // Filter by category
         if (category) {
             filter.category = category;
         }
 
-        // Club
+        // Filter by club
         if (club) {
             filter.club = club;
         }
 
-        // Approval status
+        // Filter by approval status
+        // Students cannot override the approved-only restriction
         if (status && req.user.role !== "student") {
             filter.approvalStatus = status;
         }
 
-        // ⭐ ADD THIS HERE
-        // Upcoming / Past events
-        if (req.query.time === "upcoming") {
-            filter.date = {
-                $gte: new Date()
-            };
+        // Filter by event lifecycle status
+        if (eventStatus) {
+            filter.status = eventStatus;
         }
 
-        if (req.query.time === "past") {
-            filter.date = {
-                $lt: new Date()
-            };
+        // Filter upcoming or past events
+        if (time === "upcoming") {
+            filter.date = { $gte: new Date() };
+        } else if (time === "past") {
+            filter.date = { $lt: new Date() };
         }
 
-        // Pagination
-        const skip = (Number(page) - 1) * Number(limit);
+        // 6. Pagination
+        const skip = (pageNumber - 1) * limitNumber;
 
         const totalEvents = await Event.countDocuments(filter);
 
-        // Sorting
+        // 7. Sorting
         let sortOption = {};
 
         if (sort === "date") {
@@ -145,30 +206,44 @@ const getEvents = async (req, res) => {
             sortOption = { createdAt: -1 };
         } else if (sort === "oldest") {
             sortOption = { createdAt: 1 };
+        } else {
+            return res.status(400).json({
+                message: "Invalid sort option",
+                allowedSortOptions: [
+                    "date",
+                    "newest",
+                    "oldest"
+                ]
+            });
         }
 
+        // 8. Fetch events
         const events = await Event.find(filter)
             .populate("organizer", "name email role")
             .populate("club", "name category")
             .sort(sortOption)
             .skip(skip)
-            .limit(Number(limit));
+            .limit(limitNumber);
 
+        // 9. Calculate total pages
         const totalPages = Math.ceil(
-            totalEvents / Number(limit)
+            totalEvents / limitNumber
         );
 
-        res.status(200).json({
-            currentPage: Number(page),
-            limit: Number(limit),
+        // 10. Send response
+        return res.status(200).json({
+            currentPage: pageNumber,
+            limit: limitNumber,
             totalEvents,
             totalPages,
             events
         });
 
     } catch (error) {
-        res.status(500).json({
-            message: error.message
+        console.error("Get events error:", error.message);
+
+        return res.status(500).json({
+            message: "Failed to fetch events"
         });
     }
 };
