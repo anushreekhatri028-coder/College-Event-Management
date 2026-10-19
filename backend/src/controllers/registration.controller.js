@@ -2,6 +2,9 @@ const Registration = require("../models/registration.model");
 const Event = require("../models/event.model");
 const Notification =
     require("../models/notification.model");
+const {
+  promoteNextWaitlistStudent,
+} = require("../services/waitlist.service");
 
 const registerForEvent = async (req, res) => {
     try {
@@ -40,8 +43,9 @@ const registerForEvent = async (req, res) => {
 
         // Check capacity
         if (registrationCount >= event.capacity) {
-            return res.status(400).json({
-                message: "Event is full"
+            return res.status(409).json({
+                message: "Event is full. You can join the waitlist instead.",
+                waitlistEndpoint: `/api/waitlist/event/${event._id}`,
             });
         }
 
@@ -102,35 +106,82 @@ const getParticipants = async (req, res) => {
     }
 };
 
+
 const cancelRegistration = async (req, res) => {
-    try {
-        const { eventId } = req.params;
+  try {
+    const { eventId } = req.params;
 
-        const registration = await Registration.findOne({
-            student: req.user.userId,
-            event: eventId
-        });
+    const registration = await Registration.findOne({
+      student: req.user.userId,
+      event: eventId,
+    });
 
-        if (!registration) {
-            return res.status(404).json({
-                message: "Registration not found"
-            });
-        }
-
-        await Registration.findByIdAndDelete(
-            registration._id
-        );
-
-        res.status(200).json({
-            message: "Registration cancelled successfully"
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
+    if (!registration) {
+      return res.status(404).json({
+        message: "Registration not found",
+      });
     }
+
+    // Don't allow cancellation after attendance is recorded.
+    const Attendance = require("../models/attendance.model");
+
+    const attendance = await Attendance.findOne({
+      student: req.user.userId,
+      event: eventId,
+    });
+
+    if (attendance) {
+      return res.status(400).json({
+        message: "You cannot cancel after checking in",
+      });
+    }
+
+    const event = await Event.findById(eventId);
+
+    if (!event) {
+      return res.status(404).json({
+        message: "Event not found",
+      });
+    }
+
+    if (new Date(event.date) <= new Date()) {
+      return res.status(400).json({
+        message: "You cannot cancel registration after the event has started",
+      });
+    }
+
+    // Remove the current registration first.
+    await Registration.findByIdAndDelete(registration._id);
+
+    let promotedStudent = null;
+
+    try {
+      promotedStudent = await promoteNextWaitlistStudent(eventId);
+    } catch (promotionError) {
+      console.error(
+        "Waitlist promotion failed:",
+        promotionError.message
+      );
+    }
+
+    return res.status(200).json({
+      message: "Registration cancelled successfully",
+      promotedStudent: promotedStudent
+        ? promotedStudent.student
+        : null,
+      promotionMessage: promotedStudent
+        ? "The next student on the waitlist has been registered"
+        : "No student was promoted",
+    });
+  } catch (error) {
+    console.error("Cancel registration error:", error.message);
+
+    return res.status(500).json({
+      message: "Failed to cancel registration",
+    });
+  }
 };
+
 const getMyRegistrations = async (req, res) => {
     try {
         const registrations = await Registration.find({

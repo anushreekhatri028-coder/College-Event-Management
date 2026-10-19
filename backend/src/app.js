@@ -13,6 +13,7 @@ const attendanceRoutes =
     require("./routes/attendance.routes");
 const feedbackRoutes = require("./routes/feedback.routes");
 const analyticsRoutes = require("./routes/analytics.routes");
+const waitlistRoutes = require("./routes/waitlist.routes");
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use(
     "/api",
     registrationRoutes
 );
+app.use("/api/waitlist", waitlistRoutes);
 app.use("/api/clubs", clubRoutes);
 app.use("/api/admin", adminRoutes);
 app.use(
