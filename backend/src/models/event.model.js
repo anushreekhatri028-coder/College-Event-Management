@@ -57,7 +57,18 @@ const eventSchema = new mongoose.Schema(
         cancellationReason: {
             type: String,
             default: null
-        }
+        },
+        attendanceQrTokenHash: {
+            type: String,
+            default: null,
+            select: false
+        },
+
+        attendanceQrExpiresAt: {
+            type: Date,
+            default: null,
+            select: false
+        },
     },
     {
         timestamps: true

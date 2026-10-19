@@ -4,13 +4,21 @@ const {
     checkIn,
     getEventAttendance,
     getAttendanceCount,
-    getMyAttendance
+    getMyAttendance,
+    generateEventQR
 } = require("../controllers/attendance.controller");
 
 const protect = require("../middleware/auth.middleware");
 const authorize = require("../middleware/role.middleware");
 
 const router = express.Router();
+
+router.post(
+    "/event/:eventId/qr",
+    protect,
+    authorize("organizer", "faculty", "dean", "superadmin"),
+    generateEventQR
+);
 
 
 // Student checks in
