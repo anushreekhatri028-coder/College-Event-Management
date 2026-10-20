@@ -3,7 +3,8 @@ const express = require("express");
 const {
     submitFeedback,
     getEventFeedback,
-    getMyFeedback
+    getMyFeedback,
+    getEventFeedbackSummary
 } = require("../controllers/feedback.controller");
 
 const protect = require("../middleware/auth.middleware");
@@ -38,6 +39,13 @@ router.get(
         "superadmin"
     ),
     getEventFeedback
+);
+
+router.get(
+    "/event/:eventId/summary",
+    protect,
+    authorize("organizer", "faculty", "dean", "superadmin"),
+    getEventFeedbackSummary
 );
 
 module.exports = router;

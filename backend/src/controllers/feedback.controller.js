@@ -1,6 +1,7 @@
 const Feedback = require("../models/feedback.model");
 const Event = require("../models/event.model");
 const Attendance = require("../models/attendance.model");
+const Club = require("../models/club.model");
 
 const submitFeedback = async (req, res) => {
     try {
@@ -138,8 +139,118 @@ const getMyFeedback = async (req, res) => {
     }
 };
 
+const getEventFeedbackSummary = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+
+        const event = await Event.findById(eventId);
+
+        if (!event) {
+            return res.status(404).json({
+                message: "Event not found"
+            });
+        }
+
+        // Organizers may view feedback only for their own club's events.
+        if (req.user.role === "organizer") {
+            const club = await Club.findById(event.club);
+
+            if (!club) {
+                return res.status(404).json({
+                    message: "Event club not found"
+                });
+            }
+
+            if (club.president.toString() !== req.user.userId) {
+                return res.status(403).json({
+                    message: "You can view feedback only for your own club's events"
+                });
+            }
+        }
+
+        const summary = await Feedback.aggregate([
+            {
+                $match: {
+                    event: event._id
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalFeedback: { $sum: 1 },
+                    averageRating: { $avg: "$rating" },
+                    fiveStar: {
+                        $sum: {
+                            $cond: [{ $eq: ["$rating", 5] }, 1, 0]
+                        }
+                    },
+                    fourStar: {
+                        $sum: {
+                            $cond: [{ $eq: ["$rating", 4] }, 1, 0]
+                        }
+                    },
+                    threeStar: {
+                        $sum: {
+                            $cond: [{ $eq: ["$rating", 3] }, 1, 0]
+                        }
+                    },
+                    twoStar: {
+                        $sum: {
+                            $cond: [{ $eq: ["$rating", 2] }, 1, 0]
+                        }
+                    },
+                    oneStar: {
+                        $sum: {
+                            $cond: [{ $eq: ["$rating", 1] }, 1, 0]
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    totalFeedback: 1,
+                    averageRating: {
+                        $round: ["$averageRating", 2]
+                    },
+                    ratingDistribution: {
+                        "5": "$fiveStar",
+                        "4": "$fourStar",
+                        "3": "$threeStar",
+                        "2": "$twoStar",
+                        "1": "$oneStar"
+                    }
+                }
+            }
+        ]);
+
+        return res.status(200).json({
+            eventId,
+            summary: summary[0] || {
+                totalFeedback: 0,
+                averageRating: 0,
+                ratingDistribution: {
+                    "5": 0,
+                    "4": 0,
+                    "3": 0,
+                    "2": 0,
+                    "1": 0
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error("Feedback summary error:", error.message);
+
+        return res.status(500).json({
+            message: "Failed to fetch feedback summary"
+        });
+    }
+};
+
 module.exports = {
     submitFeedback,
+    getMyFeedback,
     getEventFeedback,
-    getMyFeedback
+    getEventFeedbackSummary
 };
