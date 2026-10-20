@@ -244,7 +244,72 @@ const getMyCertificates = async (req, res) => {
 };
 
 
+const verifyCertificate = async (req, res) => {
+    try {
+        const { certificateId } = req.params;
+
+        // Reject missing or malformed certificate IDs
+        if (
+            typeof certificateId !== "string" ||
+            !/^CERT-[a-zA-Z0-9-]{10,100}$/.test(certificateId)
+        ) {
+            return res.status(400).json({
+                verified: false,
+                message: "Invalid certificate ID format"
+            });
+        }
+
+        // Find the certificate and retrieve only public details
+        const certificate = await Certificate.findOne({
+            certificateId
+        })
+            .populate("student", "name")
+            .populate("event", "title date venue");
+
+        // Certificate ID does not exist
+        if (!certificate) {
+            return res.status(404).json({
+                verified: false,
+                message: "Certificate not found"
+            });
+        }
+
+        // Handle missing related records safely
+        if (!certificate.student || !certificate.event) {
+            return res.status(404).json({
+                verified: false,
+                message: "Certificate details are unavailable"
+            });
+        }
+
+        // Return only the details needed for verification
+        return res.status(200).json({
+            verified: true,
+            message: "Certificate verified successfully",
+            certificate: {
+                certificateId: certificate.certificateId,
+                studentName: certificate.student.name,
+                eventTitle: certificate.event.title,
+                eventDate: certificate.event.date,
+                venue: certificate.event.venue,
+                issuedAt: certificate.issuedAt
+            }
+        });
+
+    } catch (error) {
+        console.error("Verify certificate error:", error);
+
+        return res.status(500).json({
+            verified: false,
+            message: "Server error while verifying certificate"
+        });
+    }
+};
+
+
+
 module.exports = {
     generateCertificate,
-    getMyCertificates
+    getMyCertificates,
+    verifyCertificate
 };

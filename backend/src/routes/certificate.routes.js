@@ -8,10 +8,17 @@ const validateObjectId = require("../middleware/validateObjectId.middleware");
 
 const {
     generateCertificate,
-    getMyCertificates
+    getMyCertificates,
+    verifyCertificate
 } = require("../controllers/certificate.controller");
 
-// Get certificates belonging to the logged-in student
+// PUBLIC: Verify a certificate using its unique ID
+router.get(
+    "/verify/:certificateId",
+    verifyCertificate
+);
+
+// STUDENT: Get certificates belonging to the logged-in student
 router.get(
     "/my",
     protect,
@@ -19,7 +26,7 @@ router.get(
     getMyCertificates
 );
 
-// Generate or download a certificate for an attended event
+// STUDENT: Generate or download a certificate for an event
 router.get(
     "/event/:eventId",
     protect,
