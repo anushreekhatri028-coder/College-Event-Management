@@ -5,7 +5,8 @@ const {
     getEventAttendance,
     getAttendanceCount,
     getMyAttendance,
-    generateEventQR
+    generateEventQR,
+    revokeEventQR
 } = require("../controllers/attendance.controller");
 
 const protect = require("../middleware/auth.middleware");
@@ -64,6 +65,13 @@ router.get(
         "superadmin"
     ),
     getAttendanceCount
+);
+
+router.delete(
+    "/event/:eventId/qr",
+    protect,
+    authorize("organizer", "faculty", "dean", "superadmin"),
+    revokeEventQR
 );
 
 

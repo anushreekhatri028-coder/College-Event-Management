@@ -310,10 +310,59 @@ const generateEventQR = async (req, res) => {
     }
 };
 
+const revokeEventQR = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+
+        const event = await Event.findById(eventId);
+
+        if (!event) {
+            return res.status(404).json({
+                message: "Event not found"
+            });
+        }
+
+        // Organizers can revoke QR codes only for their own clubs' events.
+        if (req.user.role === "organizer") {
+            const club = await Club.findById(event.club);
+
+            if (!club) {
+                return res.status(404).json({
+                    message: "Event club not found"
+                });
+            }
+
+            if (club.president.toString() !== req.user.userId) {
+                return res.status(403).json({
+                    message: "You can revoke QR codes only for your own club's events"
+                });
+            }
+        }
+
+        // Remove the active QR token and its expiry.
+        event.attendanceQrTokenHash = null;
+        event.attendanceQrExpiresAt = null;
+
+        await event.save();
+
+        return res.status(200).json({
+            message: "Event QR code revoked successfully"
+        });
+
+    } catch (error) {
+        console.error("Revoke QR error:", error.message);
+
+        return res.status(500).json({
+            message: "Failed to revoke event QR code"
+        });
+    }
+};
+
 module.exports = {
     checkIn,
     getEventAttendance,
     getAttendanceCount,
     getMyAttendance,
-    generateEventQR
+    generateEventQR,
+    revokeEventQR
 };
