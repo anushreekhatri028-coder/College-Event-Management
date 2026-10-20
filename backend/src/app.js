@@ -14,6 +14,7 @@ const attendanceRoutes =
 const feedbackRoutes = require("./routes/feedback.routes");
 const analyticsRoutes = require("./routes/analytics.routes");
 const waitlistRoutes = require("./routes/waitlist.routes");
+const certificateRoutes = require("./routes/certificate.routes");
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use(
     "/api/attendance",
     attendanceRoutes
 );
+app.use("/api/certificates", certificateRoutes);
 
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/analytics", analyticsRoutes);

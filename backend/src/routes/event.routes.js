@@ -1,4 +1,10 @@
+
 const express = require("express");
+const router = express.Router();
+
+const protect = require("../middleware/auth.middleware");
+const authorize = require("../middleware/role.middleware");
+const validateObjectId = require("../middleware/validateObjectId.middleware");
 
 const {
     createEvent,
@@ -9,21 +15,14 @@ const {
     searchEvents,
     getUpcomingEvents,
     getEventById,
+    approveEvent,
+    rejectEvent,
     getPendingEvents,
     cancelEvent
 } = require("../controllers/event.controller");
 
-const protect = require("../middleware/auth.middleware");
-const authorize = require("../middleware/role.middleware");
-const validateObjectId = require("../middleware/validateObjectId.middleware");
 
-const {
-    approveEvent,
-    rejectEvent
-} = require("../controllers/event.controller");
-
-const router = express.Router();
-
+// CREATE EVENT
 router.post(
     "/",
     protect,
@@ -31,44 +30,9 @@ router.post(
     createEvent
 );
 
-router.post(
-    "/event/:eventId",
-    protect,
-    authorize("student"),
-    validateObjectId("eventId"),
-    registerForEvent
-);
 
-router.put(
-    "/:id",
-    protect,
-    authorize("organizer", "faculty", "dean", "superadmin"),
-    updateEvent
-);
-
-router.delete(
-    "/:id",
-    protect,
-    authorize("organizer", "faculty", "dean", "superadmin"),
-    deleteEvent
-);
-
-router.delete(
-    "/event/:eventId",
-    protect,
-    authorize("student"),
-    validateObjectId("eventId"),
-    cancelRegistration
-);
-router.get(
-    "/",
-    protect,
-    getEvents
-);
-router.get("/upcoming", getUpcomingEvents);
-router.get("/search", searchEvents);
-router.get("/club/:clubId", getClubEvents);
-
+// GET PENDING EVENTS
+// Keep this before /:id
 router.get(
     "/pending",
     protect,
@@ -76,35 +40,97 @@ router.get(
     getPendingEvents
 );
 
+
+// GET UPCOMING EVENTS
+router.get(
+    "/upcoming",
+    protect,
+    getUpcomingEvents
+);
+
+
+// SEARCH EVENTS
+router.get(
+    "/search",
+    protect,
+    searchEvents
+);
+
+
+// GET EVENTS FOR A PARTICULAR CLUB
+router.get(
+    "/club/:clubId",
+    protect,
+    validateObjectId("clubId"),
+    getClubEvents
+);
+
+
+// APPROVE EVENT
 router.patch(
     "/:id/approve",
     protect,
     authorize("faculty", "dean", "superadmin"),
+    validateObjectId("id"),
     approveEvent
 );
 
+
+// REJECT EVENT
 router.patch(
     "/:id/reject",
     protect,
     authorize("faculty", "dean", "superadmin"),
+    validateObjectId("id"),
     rejectEvent
 );
 
+
+// CANCEL EVENT
 router.patch(
     "/:id/cancel",
     protect,
-    authorize(
-        "organizer",
-        "faculty",
-        "dean",
-        "superadmin"
-    ),
+    authorize("organizer", "faculty", "dean", "superadmin"),
+    validateObjectId("id"),
     cancelEvent
 );
 
 
-router.get("/:id", getEventById);
+// GET A SINGLE EVENT
+router.get(
+    "/:id",
+    protect,
+    validateObjectId("id"),
+    getEventById
+);
 
+
+// UPDATE EVENT
+router.put(
+    "/:id",
+    protect,
+    authorize("organizer", "faculty", "dean", "superadmin"),
+    validateObjectId("id"),
+    updateEvent
+);
+
+
+// DELETE EVENT
+router.delete(
+    "/:id",
+    protect,
+    authorize("organizer", "faculty", "dean", "superadmin"),
+    validateObjectId("id"),
+    deleteEvent
+);
+
+
+// GET ALL EVENTS
+router.get(
+    "/",
+    protect,
+    getEvents
+);
 
 
 module.exports = router;
