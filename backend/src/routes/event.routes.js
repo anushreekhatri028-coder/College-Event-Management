@@ -15,6 +15,7 @@ const {
 
 const protect = require("../middleware/auth.middleware");
 const authorize = require("../middleware/role.middleware");
+const validateObjectId = require("../middleware/validateObjectId.middleware");
 
 const {
     approveEvent,
@@ -28,6 +29,14 @@ router.post(
     protect,
     authorize("organizer", "faculty", "dean", "superadmin"),
     createEvent
+);
+
+router.post(
+    "/event/:eventId",
+    protect,
+    authorize("student"),
+    validateObjectId("eventId"),
+    registerForEvent
 );
 
 router.put(
@@ -44,6 +53,13 @@ router.delete(
     deleteEvent
 );
 
+router.delete(
+    "/event/:eventId",
+    protect,
+    authorize("student"),
+    validateObjectId("eventId"),
+    cancelRegistration
+);
 router.get(
     "/",
     protect,

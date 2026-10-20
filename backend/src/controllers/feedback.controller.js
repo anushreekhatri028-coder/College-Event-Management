@@ -1,25 +1,58 @@
+
 const Feedback = require("../models/feedback.model");
 const Event = require("../models/event.model");
 const Attendance = require("../models/attendance.model");
 const Club = require("../models/club.model");
 
+// Helper: check whether an organizer owns the club associated with an event
+const checkEventOwnership = async (event, user) => {
+    if (user.role !== "organizer") {
+        return true;
+    }
+
+    if (!event.club) {
+        return false;
+    }
+
+    const club = await Club.findById(event.club);
+
+    if (!club || !club.president) {
+        return false;
+    }
+
+    return club.president.toString() === user.userId;
+};
+
+
+// 1. Submit feedback for an event
 const submitFeedback = async (req, res) => {
     try {
+        const { rating, comment } = req.body || {};
+        const studentId = req.user.userId;
         const { eventId } = req.params;
-        const { rating, comment } = req.body;
 
-        if (!rating || !comment) {
+        // Validate rating
+        if (
+            !Number.isInteger(rating) ||
+            rating < 1 ||
+            rating > 5
+        ) {
             return res.status(400).json({
-                message: "Rating and comment are required"
+                message: "Rating must be an integer between 1 and 5"
             });
         }
 
-        if (rating < 1 || rating > 5) {
+        // Validate comment
+        if (
+            typeof comment !== "string" ||
+            !comment.trim()
+        ) {
             return res.status(400).json({
-                message: "Rating must be between 1 and 5"
+                message: "Comment is required"
             });
         }
 
+        // Check whether the event exists
         const event = await Event.findById(eventId);
 
         if (!event) {
@@ -28,49 +61,95 @@ const submitFeedback = async (req, res) => {
             });
         }
 
-        // Check whether student attended
+        // Feedback is accepted only for completed events
+        if (event.status !== "completed") {
+            return res.status(400).json({
+                message: "Feedback can only be submitted for completed events"
+            });
+        }
+
+        // Only students who attended can submit feedback
         const attendance = await Attendance.findOne({
-            student: req.user.userId,
-            event: eventId
+            student: studentId,
+            event: eventId,
+            status: "present"
         });
 
         if (!attendance) {
             return res.status(403).json({
-                message: "You can give feedback only after attending the event"
+                message: "You must attend the event before submitting feedback"
             });
         }
 
-        // Check duplicate feedback
+        // Prevent duplicate feedback
         const existingFeedback = await Feedback.findOne({
-            student: req.user.userId,
+            student: studentId,
             event: eventId
         });
 
         if (existingFeedback) {
-            return res.status(400).json({
-                message: "You have already submitted feedback"
+            return res.status(409).json({
+                message: "You have already submitted feedback for this event"
             });
         }
 
+        // Create feedback
         const feedback = await Feedback.create({
-            student: req.user.userId,
+            student: studentId,
             event: eventId,
             rating,
-            comment
+            comment: comment.trim()
         });
 
-        res.status(201).json({
+        return res.status(201).json({
             message: "Feedback submitted successfully",
             feedback
         });
 
     } catch (error) {
-        res.status(500).json({
-            message: error.message
+        // Handles duplicate submissions caught by the unique database index
+        if (error.code === 11000) {
+            return res.status(409).json({
+                message: "You have already submitted feedback for this event"
+            });
+        }
+
+        console.error("Submit feedback error:", error);
+
+        return res.status(500).json({
+            message: "Server error while submitting feedback"
         });
     }
 };
 
+
+// 2. Get feedback submitted by the logged-in student
+const getMyFeedback = async (req, res) => {
+    try {
+        const studentId = req.user.userId;
+
+        const feedback = await Feedback.find({
+            student: studentId
+        })
+            .populate("event", "title date venue category status")
+            .sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            count: feedback.length,
+            feedback
+        });
+
+    } catch (error) {
+        console.error("Get my feedback error:", error);
+
+        return res.status(500).json({
+            message: "Server error while fetching your feedback"
+        });
+    }
+};
+
+
+// 3. Get all feedback for a particular event
 const getEventFeedback = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -83,62 +162,41 @@ const getEventFeedback = async (req, res) => {
             });
         }
 
+        // Organizers can view feedback only for their own club's events
+        const hasOwnership = await checkEventOwnership(event, req.user);
+
+        if (!hasOwnership) {
+            return res.status(403).json({
+                message: "You are not authorized to view feedback for this event"
+            });
+        }
+
         const feedback = await Feedback.find({
             event: eventId
         })
             .populate("student", "name email")
             .sort({ createdAt: -1 });
 
-        const totalFeedback = feedback.length;
-
-        let averageRating = 0;
-
-        if (totalFeedback > 0) {
-            const totalRating = feedback.reduce(
-                (sum, item) => sum + item.rating,
-                0
-            );
-
-            averageRating = totalRating / totalFeedback;
-        }
-
-        res.status(200).json({
+        return res.status(200).json({
             event: {
                 id: event._id,
                 title: event.title
             },
-            totalFeedback,
-            averageRating: Number(averageRating.toFixed(1)),
+            count: feedback.length,
             feedback
         });
 
     } catch (error) {
-        res.status(500).json({
-            message: error.message
+        console.error("Get event feedback error:", error);
+
+        return res.status(500).json({
+            message: "Server error while fetching event feedback"
         });
     }
 };
 
-const getMyFeedback = async (req, res) => {
-    try {
-        const feedback = await Feedback.find({
-            student: req.user.userId
-        })
-            .populate("event", "title date venue")
-            .sort({ createdAt: -1 });
 
-        res.status(200).json({
-            totalFeedback: feedback.length,
-            feedback
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
-    }
-};
-
+// 4. Get feedback summary for an event
 const getEventFeedbackSummary = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -151,21 +209,13 @@ const getEventFeedbackSummary = async (req, res) => {
             });
         }
 
-        // Organizers may view feedback only for their own club's events.
-        if (req.user.role === "organizer") {
-            const club = await Club.findById(event.club);
+        // Organizers can view summaries only for their own club's events
+        const hasOwnership = await checkEventOwnership(event, req.user);
 
-            if (!club) {
-                return res.status(404).json({
-                    message: "Event club not found"
-                });
-            }
-
-            if (club.president.toString() !== req.user.userId) {
-                return res.status(403).json({
-                    message: "You can view feedback only for your own club's events"
-                });
-            }
+        if (!hasOwnership) {
+            return res.status(403).json({
+                message: "You are not authorized to view this feedback summary"
+            });
         }
 
         const summary = await Feedback.aggregate([
@@ -178,75 +228,66 @@ const getEventFeedbackSummary = async (req, res) => {
                 $group: {
                     _id: null,
                     totalFeedback: { $sum: 1 },
-                    averageRating: { $avg: "$rating" },
-                    fiveStar: {
-                        $sum: {
-                            $cond: [{ $eq: ["$rating", 5] }, 1, 0]
-                        }
-                    },
-                    fourStar: {
-                        $sum: {
-                            $cond: [{ $eq: ["$rating", 4] }, 1, 0]
-                        }
-                    },
-                    threeStar: {
-                        $sum: {
-                            $cond: [{ $eq: ["$rating", 3] }, 1, 0]
-                        }
-                    },
-                    twoStar: {
-                        $sum: {
-                            $cond: [{ $eq: ["$rating", 2] }, 1, 0]
-                        }
-                    },
-                    oneStar: {
-                        $sum: {
-                            $cond: [{ $eq: ["$rating", 1] }, 1, 0]
-                        }
-                    }
-                }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    totalFeedback: 1,
-                    averageRating: {
-                        $round: ["$averageRating", 2]
-                    },
-                    ratingDistribution: {
-                        "5": "$fiveStar",
-                        "4": "$fourStar",
-                        "3": "$threeStar",
-                        "2": "$twoStar",
-                        "1": "$oneStar"
-                    }
+                    averageRating: { $avg: "$rating" }
                 }
             }
         ]);
 
-        return res.status(200).json({
-            eventId,
-            summary: summary[0] || {
-                totalFeedback: 0,
-                averageRating: 0,
-                ratingDistribution: {
-                    "5": 0,
-                    "4": 0,
-                    "3": 0,
-                    "2": 0,
-                    "1": 0
+        // Count how many feedback entries have each rating (1–5)
+        const distribution = await Feedback.aggregate([
+            {
+                $match: {
+                    event: event._id
+                }
+            },
+            {
+                $group: {
+                    _id: "$rating",
+                    count: { $sum: 1 }
                 }
             }
+        ]);
+
+        const ratingDistribution = {
+            1: 0,
+            2: 0,
+            3: 0,
+            4: 0,
+            5: 0
+        };
+
+        distribution.forEach((item) => {
+            ratingDistribution[item._id] = item.count;
+        });
+
+        const result = summary.length > 0
+            ? summary[0]
+            : {
+                totalFeedback: 0,
+                averageRating: 0
+            };
+
+        return res.status(200).json({
+            event: {
+                id: event._id,
+                title: event.title
+            },
+            totalFeedback: result.totalFeedback,
+            averageRating: Number(
+                result.averageRating.toFixed(2)
+            ),
+            ratingDistribution
         });
 
     } catch (error) {
-        console.error("Feedback summary error:", error.message);
+        console.error("Get feedback summary error:", error);
 
         return res.status(500).json({
-            message: "Failed to fetch feedback summary"
+            message: "Server error while fetching feedback summary"
         });
     }
 };
+
 
 module.exports = {
     submitFeedback,

@@ -11,6 +11,7 @@ const {
 
 const protect = require("../middleware/auth.middleware");
 const authorize = require("../middleware/role.middleware");
+const validateObjectId = require("../middleware/validateObjectId.middleware");
 
 const router = express.Router();
 
@@ -27,6 +28,7 @@ router.post(
     "/event/:eventId/check-in",
     protect,
     authorize("student"),
+    validateObjectId("eventId"),
     checkIn
 );
 
