@@ -1,0 +1,270 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --navy: #172554;
+    --blue: #3156a6;
+    --light-bg: #f4f7fc;
+    --text: #172033;
+    --muted: #64748b;
+    --border: #dbe3ef;
+    --green: #15803d;
+    --red: #b91c1c;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: Arial, Helvetica, sans-serif;
+    color: var(--text);
+    background: var(--light-bg);
+}
+
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 8%;
+    background: white;
+    border-bottom: 1px solid var(--border);
+}
+
+.brand {
+    color: var(--navy);
+    text-decoration: none;
+    font-size: 22px;
+    font-weight: 800;
+}
+
+.nav-label {
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.page {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 55px 20px;
+}
+
+.verification-card {
+    width: 100%;
+    max-width: 650px;
+    padding: 36px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: 0 12px 35px rgba(23, 37, 84, 0.07);
+}
+
+.icon-circle {
+    width: 54px;
+    height: 54px;
+    display: grid;
+    place-items: center;
+    margin-bottom: 22px;
+    border-radius: 50%;
+    background: #e7efff;
+    color: var(--blue);
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.eyebrow {
+    margin-bottom: 10px;
+    color: var(--blue);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+}
+
+h1 {
+    margin-bottom: 14px;
+    color: var(--navy);
+    font-size: clamp(28px, 5vw, 36px);
+}
+
+.description {
+    margin-bottom: 28px;
+    color: var(--muted);
+    line-height: 1.7;
+}
+
+label {
+    display: block;
+    margin-bottom: 9px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+input {
+    width: 100%;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    outline: none;
+    font-size: 14px;
+}
+
+input:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(49, 86, 166, 0.12);
+}
+
+button {
+    width: 100%;
+    margin-top: 15px;
+    padding: 14px;
+    border: none;
+    border-radius: 9px;
+    background: var(--blue);
+    color: white;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+button:hover {
+    background: var(--navy);
+}
+
+button:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.status-message {
+    margin-top: 18px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.status-message.error {
+    color: var(--red);
+}
+
+.status-message.success {
+    color: var(--green);
+}
+
+.result-card {
+    margin-top: 24px;
+    padding: 22px;
+    border: 1px solid #bbebcc;
+    border-radius: 12px;
+    background: #f7fff9;
+}
+
+.result-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+}
+
+.verified-icon {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: #dcfce7;
+    color: var(--green);
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.result-heading h2 {
+    margin-bottom: 5px;
+    color: var(--green);
+    font-size: 19px;
+}
+
+.result-heading p {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.details {
+    display: grid;
+    gap: 0;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
+    padding: 13px 0;
+    border-top: 1px solid #e0e9e2;
+    font-size: 14px;
+}
+
+.detail-row span {
+    color: var(--muted);
+    flex-shrink: 0;
+}
+
+.detail-row strong {
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+.disclaimer {
+    margin-top: 25px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+footer {
+    padding: 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+@media (max-width: 520px) {
+    .navbar {
+        padding: 17px 5%;
+        gap: 12px;
+    }
+
+    .brand {
+        font-size: 18px;
+    }
+
+    .nav-label {
+        font-size: 12px;
+        text-align: right;
+    }
+
+    .page {
+        padding: 28px 14px;
+    }
+
+    .verification-card {
+        padding: 24px 18px;
+    }
+
+    .detail-row {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .detail-row strong {
+        text-align: left;
+    }
+}
