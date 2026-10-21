@@ -1,0 +1,115 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard | CampusEvents</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <aside class="sidebar">
+        <a class="brand" href="#">CampusEvents</a>
+
+        <p class="nav-heading">STUDENT MENU</p>
+
+        <a href="#overview" class="nav-link active">Overview</a>
+        <a href="#events" class="nav-link">My Events</a>
+        <a href="#attendance" class="nav-link">Attendance</a>
+        <a href="#certificates" class="nav-link">Certificates</a>
+
+        <button id="logout-button" class="logout-button">
+            Log out
+        </button>
+    </aside>
+
+    <main class="main-content" id="overview">
+        <header class="topbar">
+            <div>
+                <p class="eyebrow">STUDENT PORTAL</p>
+                <h1>My Dashboard</h1>
+            </div>
+
+            <div class="profile">
+                <div class="avatar" id="avatar">S</div>
+                <div>
+                    <strong id="student-name">Student</strong>
+                    <p>Student account</p>
+                </div>
+            </div>
+        </header>
+
+        <p id="page-message" class="page-message" role="status">
+            Loading your dashboard...
+        </p>
+
+        <section class="stats-grid">
+            <article class="stat-card">
+                <p>Registered Events</p>
+                <h2 id="registered-count">—</h2>
+                <span>Events you've joined</span>
+            </article>
+
+            <article class="stat-card">
+                <p>Attendance Records</p>
+                <h2 id="attendance-count">—</h2>
+                <span>Records returned by the server</span>
+            </article>
+
+            <article class="stat-card">
+                <p>Certificates</p>
+                <h2 id="certificate-count">—</h2>
+                <span>Certificates earned</span>
+            </article>
+        </section>
+
+        <section class="content-card" id="events">
+            <div class="section-heading">
+                <div>
+                    <h2>My Registered Events</h2>
+                    <p>Events associated with your account</p>
+                </div>
+            </div>
+
+            <div id="events-list" class="list-container">
+                <p class="empty-state">Loading registered events...</p>
+            </div>
+        </section>
+
+        <section class="content-card" id="attendance">
+            <div class="section-heading">
+                <div>
+                    <h2>My Attendance</h2>
+                    <p>Your recorded event attendance</p>
+                </div>
+            </div>
+
+            <div id="attendance-list" class="list-container">
+                <p class="empty-state">Loading attendance...</p>
+            </div>
+        </section>
+
+        <section class="content-card" id="certificates">
+            <div class="section-heading">
+                <div>
+                    <h2>My Certificates</h2>
+                    <p>Certificates associated with your account</p>
+                </div>
+
+                <a class="text-link" href="../certificate-verification/index.html">
+                    Verify a certificate
+                </a>
+            </div>
+
+            <div id="certificates-list" class="list-container">
+                <p class="empty-state">Loading certificates...</p>
+            </div>
+        </section>
+
+        <footer>
+            College Event Management System
+        </footer>
+    </main>
+</body>
+</html>
