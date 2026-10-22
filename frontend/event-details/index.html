@@ -1,0 +1,152 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="description"
+        content="View full event information on CampusConnect."
+    >
+
+    <title>Event Details | CampusConnect</title>
+
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+
+<body>
+    <header class="details-header">
+        <a class="brand" href="../student-dashboard/index.html">
+            <span class="brand-logo">C</span>
+            <span>
+                <strong>CampusConnect</strong>
+                <small>College Event Management</small>
+            </span>
+        </a>
+
+        <a
+            class="back-link"
+            href="../student-dashboard/index.html#browse-events-section"
+        >
+            ← Back to Events
+        </a>
+    </header>
+
+    <main class="details-main">
+        <p class="eyebrow">EVENT INFORMATION</p>
+        <h1>Event Details</h1>
+        <p class="intro">
+            Explore the information below before registering.
+        </p>
+
+        <p
+            id="details-message"
+            class="message"
+            role="status"
+            aria-live="polite"
+        >
+            Loading event details...
+        </p>
+
+        <article id="event-details-card" class="details-card" hidden>
+            <div class="event-heading">
+                <div>
+                    <span id="event-category" class="category-badge">
+                        Event
+                    </span>
+                    <h2 id="event-title">Event title</h2>
+                </div>
+
+                <span id="event-status" class="status-badge">
+                    Scheduled
+                </span>
+            </div>
+
+            <div class="details-divider"></div>
+
+            <section class="description-section">
+                <h3>About this event</h3>
+                <p id="event-description"></p>
+            </section>
+
+            <section class="information-grid">
+                <div class="information-item">
+                    <span class="information-label">Date and time</span>
+                    <p id="event-date">Not available</p>
+                </div>
+
+                <div class="information-item">
+                    <span class="information-label">Venue</span>
+                    <p id="event-venue">Not announced</p>
+                </div>
+
+                <div class="information-item">
+                    <span class="information-label">Category</span>
+                    <p id="event-category-detail">Not specified</p>
+                </div>
+
+                <div class="information-item">
+                    <span class="information-label">Organizing club</span>
+                    <p id="event-club">Not specified</p>
+                </div>
+
+                <div class="information-item">
+                    <span class="information-label">Capacity</span>
+                    <p id="event-capacity">Not specified</p>
+                </div>
+
+                <div class="information-item">
+                    <span class="information-label">Approval status</span>
+                    <p id="event-approval-status">Not specified</p>
+                </div>
+
+                <div class="information-item">
+                    <span class="information-label">Organizer</span>
+                    <p id="event-organizer">Not specified</p>
+                </div>
+            </section>
+
+            <div class="details-actions">
+                <button
+                    type="button"
+                    id="register-button"
+                    class="primary-button"
+                >
+                    Register for Event
+                </button>
+
+                <a
+                    class="secondary-button"
+                    href="../student-dashboard/index.html#browse-events-section"
+                >
+                    Browse Other Events
+                </a>
+            </div>
+
+            <p
+                id="registration-message"
+                class="message"
+                role="status"
+                aria-live="polite"
+            ></p>
+        </article>
+
+        <div id="not-found-actions" class="not-found-actions" hidden>
+            <a
+                class="primary-button"
+                href="../student-dashboard/index.html#browse-events-section"
+            >
+                Return to Events
+            </a>
+        </div>
+
+        <footer>
+            &copy; <span id="current-year"></span>
+            CampusConnect | College Event Management System
+        </footer>
+    </main>
+</body>
+</html>
+```

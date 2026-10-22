@@ -12,7 +12,6 @@
 
     <title>Student Dashboard | CampusConnect</title>
 
-    <!-- Student Dashboard CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -54,7 +53,6 @@
     <!-- ==================== MAIN CONTENT ==================== -->
     <main class="dashboard-main">
 
-        <!-- General status and error messages -->
         <div
             id="page-message"
             class="page-message"
@@ -64,12 +62,9 @@
 
 
         <!-- ==================== WELCOME SECTION ==================== -->
-        <section
-            id="dashboard-home"
-            class="welcome-section"
-        >
-            <div class="welcome-content">
+        <section id="dashboard-home" class="welcome-section">
 
+            <div class="welcome-content">
                 <p class="section-eyebrow">STUDENT PORTAL</p>
 
                 <h2>
@@ -89,7 +84,6 @@
                 >
                     Explore Events
                 </a>
-
             </div>
 
             <div
@@ -99,6 +93,7 @@
             >
                 S
             </div>
+
         </section>
 
 
@@ -108,6 +103,207 @@
             aria-label="Student dashboard statistics"
         >
 
-            <!-- Registration count -->
             <article class="stat-card">
-                <div class="stat
+                <p>Registered Events</p>
+                <h2 id="registered-count">0</h2>
+                <span>Your event registrations</span>
+            </article>
+
+            <article class="stat-card">
+                <p>Attendance Records</p>
+                <h2 id="attendance-count">0</h2>
+                <span>Events you have attended</span>
+            </article>
+
+            <article class="stat-card">
+                <p>Certificates</p>
+                <h2 id="certificate-count">0</h2>
+                <span>Your available certificates</span>
+            </article>
+
+        </section>
+
+
+        <!-- ==================== BROWSE EVENTS ==================== -->
+        <section
+            id="browse-events-section"
+            class="content-section"
+        >
+
+            <div class="section-heading">
+                <div>
+                    <p class="section-eyebrow">DISCOVER</p>
+                    <h2>Browse Upcoming Events</h2>
+                    <p>
+                        Find college events and register for the ones
+                        that interest you.
+                    </p>
+                </div>
+            </div>
+
+            <div class="event-filters">
+
+                <input
+                    type="search"
+                    id="event-search"
+                    placeholder="Search by event, club, venue..."
+                    aria-label="Search events"
+                >
+
+                <select
+                    id="event-category"
+                    aria-label="Filter events by category"
+                >
+                    <option value="">All Categories</option>
+                    <option value="technical">Technical</option>
+                    <option value="cultural">Cultural</option>
+                    <option value="sports">Sports</option>
+                    <option value="workshop">Workshop</option>
+                    <option value="seminar">Seminar</option>
+                    <option value="other">Other</option>
+                </select>
+
+                <button
+                    type="button"
+                    id="search-events-button"
+                    class="primary-button"
+                >
+                    Search
+                </button>
+
+            </div>
+
+            <p
+                id="browse-events-message"
+                class="section-message"
+                role="status"
+                aria-live="polite"
+            >
+                Upcoming events will appear here.
+            </p>
+
+            <div
+                id="browse-events-list"
+                class="event-grid"
+            ></div>
+
+        </section>
+
+
+        <!-- ==================== MY REGISTRATIONS ==================== -->
+        <section
+            id="registered-events-section"
+            class="content-section"
+        >
+
+            <div class="section-heading">
+                <div>
+                    <p class="section-eyebrow">YOUR ACTIVITIES</p>
+                    <h2>My Registrations</h2>
+                    <p>
+                        View your registered events and cancel a
+                        registration when cancellation is available.
+                    </p>
+                </div>
+            </div>
+
+            <p
+                id="registrations-message"
+                class="section-message"
+                role="status"
+                aria-live="polite"
+            >
+                Loading your registrations...
+            </p>
+
+            <div
+                id="events-list"
+                class="list-container"
+            ></div>
+
+        </section>
+
+
+        <!-- ==================== ATTENDANCE ==================== -->
+        <section
+            id="attendance-section"
+            class="content-section"
+        >
+
+            <div class="section-heading">
+                <div>
+                    <p class="section-eyebrow">PARTICIPATION</p>
+                    <h2>My Attendance</h2>
+                    <p>
+                        Review attendance records for the events
+                        you have attended.
+                    </p>
+                </div>
+            </div>
+
+            <p
+                id="attendance-message"
+                class="section-message"
+                role="status"
+                aria-live="polite"
+            >
+                Loading attendance records...
+            </p>
+
+            <div
+                id="attendance-list"
+                class="list-container"
+            ></div>
+
+        </section>
+
+
+        <!-- ==================== CERTIFICATES ==================== -->
+        <section
+            id="certificates-section"
+            class="content-section"
+        >
+
+            <div class="section-heading">
+                <div>
+                    <p class="section-eyebrow">ACHIEVEMENTS</p>
+                    <h2>My Certificates</h2>
+                    <p>
+                        View and download certificates issued to you
+                        for eligible events.
+                    </p>
+                </div>
+            </div>
+
+            <p
+                id="certificates-message"
+                class="section-message"
+                role="status"
+                aria-live="polite"
+            >
+                Loading certificates...
+            </p>
+
+            <div
+                id="certificates-list"
+                class="list-container"
+            ></div>
+
+        </section>
+
+
+        <!-- ==================== FOOTER ==================== -->
+        <footer class="dashboard-footer">
+            <p>
+                &copy; <span id="current-year"></span>
+                CampusConnect | College Event Management System
+            </p>
+        </footer>
+
+    </main>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
+```

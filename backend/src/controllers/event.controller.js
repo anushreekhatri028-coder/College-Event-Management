@@ -474,6 +474,7 @@ const getUpcomingEvents = async (req, res) => {
     }
 };
 
+
 const getEventById = async (req, res) => {
     try {
         const event = await Event.findById(req.params.id)
@@ -486,13 +487,26 @@ const getEventById = async (req, res) => {
             });
         }
 
-        res.status(200).json({
+        // Students can view only approved events.
+        // Other authenticated roles can view events of any approval status.
+        if (
+            req.user.role === "student" &&
+            event.approvalStatus !== "approved"
+        ) {
+            return res.status(404).json({
+                message: "Event not found"
+            });
+        }
+
+        return res.status(200).json({
             event
         });
 
     } catch (error) {
-        res.status(500).json({
-            message: error.message
+        console.error("Get event by ID error:", error.message);
+
+        return res.status(500).json({
+            message: "Failed to fetch event details"
         });
     }
 };
