@@ -1,92 +1,219 @@
-
-/*
- * College Event Management System
- * Student Dashboard — Day 35 + Day 36
- *
- * File:
- * frontend/student-dashboard/script.js
- */
-
 const API_BASE_URL = "http://localhost:5000/api";
 
-// IMPORTANT:
-// Confirm these paths against backend/src/routes/registration.routes.js,
-// attendance.routes.js, and certificate.routes.js.
-// Change them if your actual backend uses different paths.
 const API = {
-    registrations: `${API_BASE_URL}/registrations/my`,
-    attendance: `${API_BASE_URL}/attendance/my`,
-    certificates: `${API_BASE_URL}/certificates/my`
+    events: `${API_BASE_URL}/events`,
+    myRegistrations: `${API_BASE_URL}/registrations/my`,
+    myAttendance: `${API_BASE_URL}/attendance/my`,
+    myCertificates: `${API_BASE_URL}/certificates/my`,
+
+    // Confirm these routes against your registration.routes.js.
+    registerForEvent: (eventId) =>
+        `${API_BASE_URL}/registrations/event/${eventId}`,
+
+    cancelRegistration: (eventId) =>
+        `${API_BASE_URL}/registrations/event/${eventId}`
 };
 
-// --------------------------------------------------
-// 1. AUTHENTICATION HELPERS
-// --------------------------------------------------
+
+// ==================== 2. APPLICATION STATE ====================
+
+let allBrowseEvents = [];
+let myRegistrations = [];
+let myAttendanceRecords = [];
+let myCertificates = [];
+
+const registrationRequestsInProgress = new Set();
+const cancellationRequestsInProgress = new Set();
+
+
+// ==================== 3. AUTHENTICATION ====================
 
 function getToken() {
     return (
         localStorage.getItem("token") ||
         localStorage.getItem("authToken") ||
         sessionStorage.getItem("token") ||
-        sessionStorage.getItem("authToken")
-    );
-}
-
-function getSavedStudentName() {
-    return (
-        localStorage.getItem("studentName") ||
-        sessionStorage.getItem("studentName") ||
+        sessionStorage.getItem("authToken") ||
         ""
     );
 }
 
-// --------------------------------------------------
-// 2. API REQUEST HELPER
-// --------------------------------------------------
 
-async function fetchStudentData(url, options = {}) {
+function getStoredUser() {
+    const possibleKeys = [
+        "user",
+        "student",
+        "currentUser",
+        "loggedInUser"
+    ];
+
+    for (const key of possibleKeys) {
+        const storedValue =
+            localStorage.getItem(key) ||
+            sessionStorage.getItem(key);
+
+        if (!storedValue) {
+            continue;
+        }
+
+        try {
+            const parsedValue = JSON.parse(storedValue);
+
+            if (parsedValue && typeof parsedValue === "object") {
+                return parsedValue.user || parsedValue;
+            }
+        } catch (error) {
+            console.warn(`Could not parse stored user data for "${key}".`);
+        }
+    }
+
+    return null;
+}
+
+
+function redirectToLogin() {
+    // Change this path if your login page is located elsewhere.
+    window.location.href = "../login/index.html";
+}
+
+
+function requireLogin() {
     const token = getToken();
 
     if (!token) {
+        showPageMessage(
+            "Please log in to access your student dashboard.",
+            "error"
+        );
+
+        redirectToLogin();
+        return false;
+    }
+
+    return true;
+}
+
+
+// ==================== 4. API REQUEST HELPER ====================
+
+async function apiRequest(url, options = {}) {
+    const token = getToken();
+
+    const headers = {
+        Accept: "application/json",
+        ...(options.headers || {})
+    };
+
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+
+    if (
+        options.body &&
+        typeof options.body === "string" &&
+        !headers["Content-Type"]
+    ) {
+        headers["Content-Type"] = "application/json";
+    }
+
+    let response;
+
+    try {
+        response = await fetch(url, {
+            ...options,
+            headers
+        });
+    } catch (error) {
         throw new Error(
-            "Your login token was not found. Please log in as a student."
+            "Cannot connect to the backend. Make sure your Node.js server is running on port 5000."
         );
     }
 
-    const response = await fetch(url, {
-        ...options,
-        headers: {
-            Accept: "application/json",
-            Authorization: `Bearer ${token}`,
-            ...(options.headers || {})
+    const responseText = await response.text();
+
+    let data = null;
+
+    if (responseText) {
+        try {
+            data = JSON.parse(responseText);
+        } catch (error) {
+            if (response.ok) {
+                data = { message: responseText };
+            } else {
+                data = null;
+            }
         }
-    });
+    }
 
-    let data = {};
+    if (response.status === 401) {
+        clearLoginData();
 
-    try {
-        const responseText = await response.text();
-        data = responseText ? JSON.parse(responseText) : {};
-    } catch {
-        throw new Error("The server returned an invalid JSON response.");
+        throw new Error(
+            "Your session has expired. Please log in again."
+        );
+    }
+
+    if (response.status === 403) {
+        throw new Error(
+            data?.message ||
+            "You do not have permission to perform this action."
+        );
     }
 
     if (!response.ok) {
         throw new Error(
-            data.message ||
-            data.error ||
-            `Request failed with status ${response.status}`
+            data?.message ||
+            data?.error ||
+            `Request failed with status ${response.status}.`
         );
     }
 
     return data;
 }
 
-// --------------------------------------------------
-// 3. RESPONSE HELPERS
-// --------------------------------------------------
 
-function extractList(data, possibleKeys) {
+function clearLoginData() {
+    [
+        "token",
+        "authToken",
+        "user",
+        "student",
+        "currentUser",
+        "loggedInUser"
+    ].forEach((key) => {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+    });
+}
+
+
+// ==================== 5. GENERAL HELPERS ====================
+
+function getErrorMessage(error) {
+    return error?.message || "Something went wrong. Please try again.";
+}
+
+
+function getDisplayName(value) {
+    if (typeof value === "string") {
+        return value;
+    }
+
+    if (value && typeof value === "object") {
+        return (
+            value.name ||
+            value.fullName ||
+            value.title ||
+            value.email ||
+            ""
+        );
+    }
+
+    return "";
+}
+
+
+function extractList(data, possibleKeys = []) {
     if (Array.isArray(data)) {
         return data;
     }
@@ -95,21 +222,31 @@ function extractList(data, possibleKeys) {
         return [];
     }
 
-    for (const key of possibleKeys) {
-        if (Array.isArray(data[key])) {
-            return data[key];
-        }
-    }
+    // Handle common Express/Mongoose response formats.
+    const keys = [
+        ...possibleKeys,
+        "data",
+        "results",
+        "items",
+        "events",
+        "registrations",
+        "attendance",
+        "records",
+        "certificates"
+    ];
 
-    // Support common nested response formats.
-    if (data.data && typeof data.data === "object") {
-        if (Array.isArray(data.data)) {
-            return data.data;
+    for (const key of keys) {
+        const value = data[key];
+
+        if (Array.isArray(value)) {
+            return value;
         }
 
-        for (const key of possibleKeys) {
-            if (Array.isArray(data.data[key])) {
-                return data.data[key];
+        if (value && typeof value === "object") {
+            const nested = extractList(value, []);
+
+            if (nested.length > 0) {
+                return nested;
             }
         }
     }
@@ -117,27 +254,33 @@ function extractList(data, possibleKeys) {
     return [];
 }
 
-function formatDate(value) {
-    if (!value) {
-        return "Not provided";
+
+function formatDate(dateValue) {
+    if (!dateValue) {
+        return "Date not available";
     }
 
-    const date = new Date(value);
+    const date = new Date(dateValue);
 
     if (Number.isNaN(date.getTime())) {
-        return "Not available";
+        return "Date not available";
     }
 
     return date.toLocaleString("en-IN", {
-        day: "2-digit",
+        day: "numeric",
         month: "short",
         year: "numeric",
-        hour: "2-digit",
+        hour: "numeric",
         minute: "2-digit"
     });
 }
 
+
 function getEvent(registration) {
+    if (!registration || typeof registration !== "object") {
+        return {};
+    }
+
     return (
         registration.event ||
         registration.eventId ||
@@ -146,122 +289,635 @@ function getEvent(registration) {
     );
 }
 
-function getEventId(registration) {
-    const event = getEvent(registration);
 
-    if (typeof event === "string") {
-        return event;
+function getEventId(item) {
+    if (!item || typeof item !== "object") {
+        return "";
     }
 
+    const event = getEvent(item);
+
+    const id =
+        item.eventId?._id ||
+        item.eventId?.id ||
+        event?._id ||
+        event?.id ||
+        (typeof item.eventId === "string" ? item.eventId : "") ||
+        item.event?._id ||
+        item.event?.id ||
+        item._id ||
+        item.id ||
+        "";
+
+    return String(id);
+}
+
+
+function getId(item) {
+    if (!item || typeof item !== "object") {
+        return "";
+    }
+
+    return String(item._id || item.id || "");
+}
+
+
+function getEventTitle(event) {
     return (
-        event._id ||
-        event.id ||
-        (typeof registration.eventId === "string"
-            ? registration.eventId
-            : null) ||
-        registration.event?._id ||
-        null
+        event?.title ||
+        event?.name ||
+        event?.eventName ||
+        "Untitled Event"
     );
 }
 
-function addText(parent, tag, text, className = "") {
-    const element = document.createElement(tag);
 
-    // textContent avoids treating API-provided text as HTML.
-    element.textContent = String(text ?? "");
+function getEventVenue(event) {
+    return (
+        event?.venue ||
+        event?.location ||
+        event?.place ||
+        "Venue not announced"
+    );
+}
+
+
+function getEventCategory(event) {
+    return (
+        event?.category ||
+        event?.eventCategory ||
+        "Other"
+    );
+}
+
+
+function getEventDescription(event) {
+    return (
+        event?.description ||
+        event?.details ||
+        "No description is available for this event."
+    );
+}
+
+
+function getEventDate(event) {
+    return event?.date || event?.eventDate || event?.startDate || "";
+}
+
+
+function getClubName(event) {
+    return getDisplayName(event?.club) ||
+        event?.clubName ||
+        "College Club";
+}
+
+
+function createElement(tagName, className, text) {
+    const element = document.createElement(tagName);
 
     if (className) {
         element.className = className;
     }
+
+    if (text !== undefined && text !== null) {
+        element.textContent = String(text);
+    }
+
+    return element;
+}
+
+
+function addText(parent, tagName, className, text) {
+    const element = createElement(tagName, className, text);
 
     parent.appendChild(element);
 
     return element;
 }
 
-function renderEmpty(containerId, message) {
-    const container = document.getElementById(containerId);
+
+function clearElement(element) {
+    if (element) {
+        element.replaceChildren();
+    }
+}
+
+
+function showMessage(elementId, message, type = "info") {
+    const element = document.getElementById(elementId);
+
+    if (!element) {
+        return;
+    }
+
+    element.textContent = message;
+    element.className = `section-message ${type}`;
+}
+
+
+function showPageMessage(message, type = "info") {
+    showMessage("page-message", message, type);
+}
+
+
+function renderEmpty(container, message) {
+    if (!container) {
+        return;
+    }
+
+    clearElement(container);
+
+    const empty = createElement("p", "empty-state", message);
+
+    container.appendChild(empty);
+}
+
+
+function createButton(text, className, onClick) {
+    const button = createElement("button", className, text);
+
+    button.type = "button";
+    button.addEventListener("click", onClick);
+
+    return button;
+}
+
+
+function getStatus(item) {
+    return String(
+        item?.status ||
+        item?.attendanceStatus ||
+        item?.approvalStatus ||
+        "Not specified"
+    );
+}
+
+
+// ==================== 6. STUDENT PROFILE ====================
+
+function renderStudentProfile() {
+    const user = getStoredUser();
+
+    const nameElement = document.getElementById("student-name");
+    const avatarElement = document.getElementById("avatar");
+
+    if (!user) {
+        if (nameElement) {
+            nameElement.textContent = "Student";
+        }
+
+        if (avatarElement) {
+            avatarElement.textContent = "S";
+        }
+
+        return;
+    }
+
+    const name =
+        user.name ||
+        user.fullName ||
+        user.username ||
+        user.email ||
+        "Student";
+
+    if (nameElement) {
+        nameElement.textContent = name;
+    }
+
+    if (avatarElement) {
+        avatarElement.textContent = name
+            .trim()
+            .charAt(0)
+            .toUpperCase() || "S";
+    }
+}
+
+
+// ==================== 7. DASHBOARD STATISTICS ====================
+
+function updateDashboardCounts() {
+    const registrationCount =
+        document.getElementById("registered-count");
+
+    const attendanceCount =
+        document.getElementById("attendance-count");
+
+    const certificateCount =
+        document.getElementById("certificate-count");
+
+    if (registrationCount) {
+        registrationCount.textContent = myRegistrations.length;
+    }
+
+    if (attendanceCount) {
+        attendanceCount.textContent = myAttendanceRecords.length;
+    }
+
+    if (certificateCount) {
+        certificateCount.textContent = myCertificates.length;
+    }
+}
+
+
+// ==================== 8. BROWSE EVENTS ====================
+
+function isUpcomingEvent(event) {
+    const dateValue = getEventDate(event);
+
+    // Do not display an event with no valid date as upcoming.
+    if (!dateValue) {
+        return false;
+    }
+
+    const eventDate = new Date(dateValue);
+
+    if (Number.isNaN(eventDate.getTime())) {
+        return false;
+    }
+
+    const status = String(event.status || "scheduled").toLowerCase();
+
+    const approvalStatus = String(
+        event.approvalStatus || ""
+    ).toLowerCase();
+
+    const isApproved =
+        approvalStatus === "approved" ||
+        event.approvalStatus === undefined;
+
+    return (
+        isApproved &&
+        status === "scheduled" &&
+        eventDate >= new Date()
+    );
+}
+
+
+async function loadBrowseEvents() {
+    const container = document.getElementById("browse-events-list");
 
     if (!container) {
         return;
     }
 
-    container.replaceChildren();
-    addText(container, "p", message, "empty-state");
-}
+    showMessage("browse-events-message", "Loading upcoming events...");
 
-function setPageMessage(message) {
-    const element = document.getElementById("page-message");
+    try {
+        const response = await apiRequest(API.events);
 
-    if (element) {
-        element.textContent = message;
+        allBrowseEvents = extractList(response, ["events"]);
+
+        // Apply student-facing event filters.
+        allBrowseEvents = allBrowseEvents.filter(isUpcomingEvent);
+
+        renderBrowseEvents(allBrowseEvents);
+
+        if (allBrowseEvents.length === 0) {
+            showMessage(
+                "browse-events-message",
+                "No upcoming approved events were found."
+            );
+        } else {
+            showMessage(
+                "browse-events-message",
+                `${allBrowseEvents.length} upcoming event(s) available.`,
+                "success"
+            );
+        }
+    } catch (error) {
+        renderEmpty(
+            container,
+            "Unable to load events. Please try again."
+        );
+
+        showMessage(
+            "browse-events-message",
+            getErrorMessage(error),
+            "error"
+        );
     }
 }
 
-// --------------------------------------------------
-// 4. STUDENT PROFILE
-// --------------------------------------------------
 
-function renderStudentProfile() {
-    const name = getSavedStudentName();
+function getRegisteredEventIds() {
+    return new Set(
+        myRegistrations
+            .map(getEventId)
+            .filter(Boolean)
+            .map(String)
+    );
+}
 
-    const nameElement = document.getElementById("student-name");
-    const avatarElement = document.getElementById("avatar");
 
-    if (name && nameElement) {
-        nameElement.textContent = name;
+function renderBrowseEvents(events) {
+    const container = document.getElementById("browse-events-list");
+
+    if (!container) {
+        return;
     }
 
-    if (name && avatarElement) {
-        avatarElement.textContent = name.charAt(0).toUpperCase();
+    clearElement(container);
+
+    if (!events.length) {
+        renderEmpty(
+            container,
+            "No events match your search. Try a different keyword or category."
+        );
+
+        return;
+    }
+
+    const registeredIds = getRegisteredEventIds();
+
+    events.forEach((event) => {
+        const eventId = getId(event);
+
+        const card = createElement("article", "event-card");
+
+        addText(card, "h3", "event-title", getEventTitle(event));
+
+        addText(
+            card,
+            "p",
+            "event-description",
+            getEventDescription(event)
+        );
+
+        addText(
+            card,
+            "p",
+            "event-detail",
+            `Date: ${formatDate(getEventDate(event))}`
+        );
+
+        addText(
+            card,
+            "p",
+            "event-detail",
+            `Venue: ${getEventVenue(event)}`
+        );
+
+        addText(
+            card,
+            "p",
+            "event-detail",
+            `Category: ${getEventCategory(event)}`
+        );
+
+        addText(
+            card,
+            "p",
+            "event-detail",
+            `Club: ${getClubName(event)}`
+        );
+
+        if (event.capacity !== undefined) {
+            addText(
+                card,
+                "p",
+                "event-detail",
+                `Capacity: ${event.capacity}`
+            );
+        }
+
+        if (registeredIds.has(eventId)) {
+            const registeredBadge = addText(
+                card,
+                "span",
+                "status-badge",
+                "Already Registered"
+            );
+
+            registeredBadge.setAttribute("aria-label", "Already registered");
+        } else if (eventId) {
+            const registerButton = createButton(
+                "Register",
+                "primary-button",
+                () => registerForEvent(eventId)
+            );
+
+            card.appendChild(registerButton);
+        }
+
+        container.appendChild(card);
+    });
+}
+
+
+function filterBrowseEvents() {
+    const searchInput = document.getElementById("event-search");
+    const categorySelect = document.getElementById("event-category");
+
+    const searchTerm = (searchInput?.value || "")
+        .trim()
+        .toLowerCase();
+
+    const selectedCategory = (categorySelect?.value || "")
+        .trim()
+        .toLowerCase();
+
+    const filteredEvents = allBrowseEvents.filter((event) => {
+        const searchableText = [
+            getEventTitle(event),
+            getEventDescription(event),
+            getEventVenue(event),
+            getEventCategory(event),
+            getClubName(event)
+        ].join(" ").toLowerCase();
+
+        const matchesSearch = searchableText.includes(searchTerm);
+
+        const matchesCategory =
+            !selectedCategory ||
+            getEventCategory(event).toLowerCase() === selectedCategory;
+
+        return matchesSearch && matchesCategory;
+    });
+
+    renderBrowseEvents(filteredEvents);
+
+    showMessage(
+        "browse-events-message",
+        `${filteredEvents.length} event(s) match your search.`,
+        "info"
+    );
+}
+
+
+function initializeEventBrowser() {
+    const searchButton =
+        document.getElementById("search-events-button");
+
+    const searchInput =
+        document.getElementById("event-search");
+
+    const categorySelect =
+        document.getElementById("event-category");
+
+    if (searchButton) {
+        searchButton.addEventListener("click", filterBrowseEvents);
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                filterBrowseEvents();
+            }
+        });
+
+        searchInput.addEventListener("input", filterBrowseEvents);
+    }
+
+    if (categorySelect) {
+        categorySelect.addEventListener("change", filterBrowseEvents);
     }
 }
 
-// --------------------------------------------------
-// 5. REGISTERED EVENTS
-// --------------------------------------------------
+
+// ==================== 9. REGISTER FOR AN EVENT ====================
+
+async function registerForEvent(eventId) {
+    if (!eventId) {
+        showPageMessage("Event ID is missing.", "error");
+        return;
+    }
+
+    if (!getToken()) {
+        showPageMessage("Please log in before registering.", "error");
+        return;
+    }
+
+    const registeredIds = getRegisteredEventIds();
+
+    if (registeredIds.has(String(eventId))) {
+        showPageMessage(
+            "You are already registered for this event.",
+            "info"
+        );
+
+        return;
+    }
+
+    if (registrationRequestsInProgress.has(String(eventId))) {
+        return;
+    }
+
+    const event = allBrowseEvents.find(
+        (item) => getId(item) === String(eventId)
+    );
+
+    if (event && !isUpcomingEvent(event)) {
+        showPageMessage(
+            "Registration is available only for upcoming approved events.",
+            "error"
+        );
+
+        return;
+    }
+
+    registrationRequestsInProgress.add(String(eventId));
+
+    try {
+        // Confirm this POST route matches registration.routes.js.
+        const response = await apiRequest(
+            API.registerForEvent(eventId),
+            {
+                method: "POST"
+            }
+        );
+
+        showPageMessage(
+            response?.message || "Registration completed successfully.",
+            "success"
+        );
+
+        await loadRegistrations();
+        await loadBrowseEvents();
+    } catch (error) {
+        showPageMessage(getErrorMessage(error), "error");
+    } finally {
+        registrationRequestsInProgress.delete(String(eventId));
+    }
+}
+
+
+// ==================== 10. MY REGISTRATIONS ====================
+
+async function loadRegistrations() {
+    const container = document.getElementById("events-list");
+
+    if (!container) {
+        return;
+    }
+
+    showMessage("registrations-message", "Loading your registrations...");
+
+    try {
+        const response = await apiRequest(API.myRegistrations);
+
+        myRegistrations = extractList(response, ["registrations"]);
+
+        renderRegistrations(myRegistrations);
+
+        updateDashboardCounts();
+
+        showMessage(
+            "registrations-message",
+            myRegistrations.length
+                ? `${myRegistrations.length} registration(s) found.`
+                : "You have not registered for any events yet.",
+            "info"
+        );
+    } catch (error) {
+        renderEmpty(
+            container,
+            "Unable to load registrations."
+        );
+
+        showMessage(
+            "registrations-message",
+            getErrorMessage(error),
+            "error"
+        );
+    }
+}
+
 
 function canCancelRegistration(registration) {
     const event = getEvent(registration);
 
-    const eventStatus = String(event.status || "").toLowerCase();
     const registrationStatus = String(
-        registration.status || ""
+        registration?.status || "registered"
     ).toLowerCase();
 
-    // Do not show cancellation for completed/cancelled events.
-    if (
-        eventStatus === "cancelled" ||
-        eventStatus === "completed"
-    ) {
-        return false;
-    }
+    const eventStatus = String(
+        event?.status || "scheduled"
+    ).toLowerCase();
 
-    if (
-        registrationStatus === "cancelled" ||
-        registrationStatus === "canceled" ||
-        registrationStatus === "completed"
-    ) {
-        return false;
-    }
+    const eventDateValue = getEventDate(event);
+    const eventDate = eventDateValue
+        ? new Date(eventDateValue)
+        : null;
 
-    // Do not offer cancellation after the event has started.
-    // The backend must enforce the actual cancellation policy too.
-    const eventDate = event.date || event.eventDate;
+    const hasValidDate =
+        eventDate && !Number.isNaN(eventDate.getTime());
 
-    if (eventDate) {
-        const parsedDate = new Date(eventDate);
+    const hasNotStarted =
+        !hasValidDate || eventDate > new Date();
 
-        if (
-            !Number.isNaN(parsedDate.getTime()) &&
-            parsedDate <= new Date()
-        ) {
-            return false;
-        }
-    }
+    const registrationIsActive = [
+        "registered",
+        "confirmed",
+        "active"
+    ].includes(registrationStatus);
 
-    return Boolean(getEventId(registration));
+    return (
+        registrationIsActive &&
+        eventStatus === "scheduled" &&
+        hasNotStarted
+    );
 }
+
 
 function renderRegistrations(registrations) {
     const container = document.getElementById("events-list");
@@ -270,83 +926,65 @@ function renderRegistrations(registrations) {
         return;
     }
 
-    container.replaceChildren();
+    clearElement(container);
 
-    const countElement = document.getElementById("registered-count");
+    // Keep registered IDs available to the browse-events section.
+    window.studentRegistrationEventIds = registrations
+        .map(getEventId)
+        .filter(Boolean)
+        .map(String);
 
-    if (countElement) {
-        countElement.textContent = registrations.length;
-    }
-
-    if (registrations.length === 0) {
+    if (!registrations.length) {
         renderEmpty(
-            "events-list",
-            "You have not registered for any events yet."
+            container,
+            "You have not registered for any events yet. Browse events to get started."
         );
+
         return;
     }
 
     registrations.forEach((registration) => {
         const event = getEvent(registration);
+        const eventId = getEventId(registration);
 
-        const card = document.createElement("article");
-        card.className = "data-item";
+        const card = createElement("article", "event-card");
 
-        const details = document.createElement("div");
-
-        addText(
-            details,
-            "h3",
-            event.title || event.name || "Untitled event"
-        );
-
-        addText(
-            details,
-            "p",
-            `Date: ${formatDate(event.date || event.eventDate)}`
-        );
-
-        addText(
-            details,
-            "p",
-            `Venue: ${event.venue || "Not provided"}`
-        );
-
-        if (event.club && typeof event.club === "object") {
-            addText(
-                details,
-                "p",
-                `Club: ${event.club.name || "Not provided"}`
-            );
-        }
+        addText(card, "h3", "event-title", getEventTitle(event));
 
         addText(
             card,
-            "span",
-            registration.status || "Registered",
-            "status"
+            "p",
+            "event-detail",
+            `Date: ${formatDate(getEventDate(event))}`
         );
 
-        card.prepend(details);
+        addText(
+            card,
+            "p",
+            "event-detail",
+            `Venue: ${getEventVenue(event)}`
+        );
 
-        if (canCancelRegistration(registration)) {
-            const cancelButton = document.createElement("button");
+        addText(
+            card,
+            "p",
+            "event-detail",
+            `Category: ${getEventCategory(event)}`
+        );
 
-            cancelButton.type = "button";
-            cancelButton.className = "cancel-button";
-            cancelButton.textContent = "Cancel registration";
+        addText(
+            card,
+            "p",
+            "event-detail",
+            `Registration status: ${getStatus(registration)}`
+        );
 
-            cancelButton.addEventListener("click", async () => {
-                cancelButton.disabled = true;
-                cancelButton.textContent = "Cancelling...";
-
-                try {
-                    await cancelRegistration(registration);
-                } finally {
-                    cancelButton.disabled = false;
-                    cancelButton.textContent = "Cancel registration";
-                }
-            });
+        if (canCancelRegistration(registration) && eventId) {
+            const cancelButton = createButton(
+                "Cancel Registration",
+                "danger-button",
+                () => cancelRegistration(eventId)
+            );
 
             card.appendChild(cancelButton);
         }
@@ -355,18 +993,16 @@ function renderRegistrations(registrations) {
     });
 }
 
-// --------------------------------------------------
-// 6. CANCEL REGISTRATION
-// --------------------------------------------------
 
-async function cancelRegistration(registration) {
-    const eventId = getEventId(registration);
+// ==================== 11. CANCEL REGISTRATION ====================
 
+async function cancelRegistration(eventId) {
     if (!eventId) {
-        alert(
-            "The event ID was not found in this registration. " +
-            "Check the registration API response."
-        );
+        showPageMessage("Event ID is missing.", "error");
+        return;
+    }
+
+    if (cancellationRequestsInProgress.has(String(eventId))) {
         return;
     }
 
@@ -378,35 +1014,73 @@ async function cancelRegistration(registration) {
         return;
     }
 
+    cancellationRequestsInProgress.add(String(eventId));
+
     try {
-        const result = await fetchStudentData(
-            `${API_BASE_URL}/registrations/event/${encodeURIComponent(eventId)}`,
+        // This DELETE route was discussed in the earlier project tasks.
+        const response = await apiRequest(
+            API.cancelRegistration(eventId),
             {
                 method: "DELETE"
             }
         );
 
-        alert(
-            result.message ||
-            "Registration cancellation request completed."
+        showPageMessage(
+            response?.message || "Registration cancelled successfully.",
+            "success"
         );
 
-        // Reload all sections from the server.
-        await loadDashboard();
-
+        await loadRegistrations();
+        await loadBrowseEvents();
     } catch (error) {
-        console.error("Cancellation error:", error);
+        showPageMessage(getErrorMessage(error), "error");
+    } finally {
+        cancellationRequestsInProgress.delete(String(eventId));
+    }
+}
 
-        alert(
-            error.message ||
-            "Unable to cancel the registration."
+
+// ==================== 12. MY ATTENDANCE ====================
+
+async function loadAttendance() {
+    const container = document.getElementById("attendance-list");
+
+    if (!container) {
+        return;
+    }
+
+    showMessage("attendance-message", "Loading attendance records...");
+
+    try {
+        const response = await apiRequest(API.myAttendance);
+
+        myAttendanceRecords = extractList(
+            response,
+            ["attendance", "records"]
+        );
+
+        renderAttendance(myAttendanceRecords);
+
+        updateDashboardCounts();
+
+        showMessage(
+            "attendance-message",
+            myAttendanceRecords.length
+                ? `${myAttendanceRecords.length} attendance record(s) found.`
+                : "No attendance records found yet.",
+            "info"
+        );
+    } catch (error) {
+        renderEmpty(container, "Unable to load attendance records.");
+
+        showMessage(
+            "attendance-message",
+            getErrorMessage(error),
+            "error"
         );
     }
 }
 
-// --------------------------------------------------
-// 7. ATTENDANCE
-// --------------------------------------------------
 
 function renderAttendance(records) {
     const container = document.getElementById("attendance-list");
@@ -415,63 +1089,102 @@ function renderAttendance(records) {
         return;
     }
 
-    container.replaceChildren();
+    clearElement(container);
 
-    const countElement = document.getElementById("attendance-count");
-
-    if (countElement) {
-        countElement.textContent = records.length;
-    }
-
-    if (records.length === 0) {
+    if (!records.length) {
         renderEmpty(
-            "attendance-list",
-            "No attendance records found."
+            container,
+            "Your attendance records will appear here after you attend an event."
         );
+
         return;
     }
 
     records.forEach((record) => {
         const event = getEvent(record);
 
-        const card = document.createElement("article");
-        card.className = "data-item";
-
-        const details = document.createElement("div");
+        const card = createElement("article", "record-card");
 
         addText(
-            details,
+            card,
             "h3",
-            event.title || event.name || "Event attendance"
-        );
-
-        addText(
-            details,
-            "p",
-            `Check-in: ${formatDate(record.checkInTime)}`
-        );
-
-        addText(
-            details,
-            "p",
-            `Event date: ${formatDate(event.date || event.eventDate)}`
+            "record-title",
+            getEventTitle(event)
         );
 
         addText(
             card,
-            "span",
-            record.status || "Recorded",
-            "status"
+            "p",
+            "record-detail",
+            `Attendance: ${getStatus(record)}`
         );
 
-        card.prepend(details);
+        const attendanceDate =
+            record.checkInTime ||
+            record.attendanceDate ||
+            record.createdAt ||
+            getEventDate(event);
+
+        addText(
+            card,
+            "p",
+            "record-detail",
+            `Date: ${formatDate(attendanceDate)}`
+        );
+
+        addText(
+            card,
+            "p",
+            "record-detail",
+            `Venue: ${getEventVenue(event)}`
+        );
+
         container.appendChild(card);
     });
 }
 
-// --------------------------------------------------
-// 8. CERTIFICATES
-// --------------------------------------------------
+
+// ==================== 13. MY CERTIFICATES ====================
+
+async function loadCertificates() {
+    const container = document.getElementById("certificates-list");
+
+    if (!container) {
+        return;
+    }
+
+    showMessage("certificates-message", "Loading certificates...");
+
+    try {
+        const response = await apiRequest(API.myCertificates);
+
+        myCertificates = extractList(
+            response,
+            ["certificates"]
+        );
+
+        renderCertificates(myCertificates);
+
+        updateDashboardCounts();
+
+        showMessage(
+            "certificates-message",
+            myCertificates.length
+                ? `${myCertificates.length} certificate(s) found.`
+                : "No certificates have been issued to you yet.",
+            "info"
+        );
+    } catch (error) {
+        renderEmpty(container, "Unable to load certificates.");
+
+        showMessage(
+            "certificates-message",
+            getErrorMessage(error),
+            "error"
+        );
+    }
+}
+
 
 function renderCertificates(certificates) {
     const container = document.getElementById("certificates-list");
@@ -480,223 +1193,141 @@ function renderCertificates(certificates) {
         return;
     }
 
-    container.replaceChildren();
+    clearElement(container);
 
-    const countElement = document.getElementById("certificate-count");
-
-    if (countElement) {
-        countElement.textContent = certificates.length;
-    }
-
-    if (certificates.length === 0) {
+    if (!certificates.length) {
         renderEmpty(
-            "certificates-list",
-            "No certificates are available in your account yet."
+            container,
+            "Certificates issued to you will appear here."
         );
+
         return;
     }
 
     certificates.forEach((certificate) => {
-        const card = document.createElement("article");
-        card.className = "data-item";
+        const event = getEvent(certificate);
 
-        const details = document.createElement("div");
+        const card = createElement("article", "record-card");
 
         addText(
-            details,
+            card,
             "h3",
-            certificate.eventTitle ||
-            certificate.event?.title ||
+            "record-title",
             certificate.title ||
-            "Event certificate"
+            certificate.certificateTitle ||
+            getEventTitle(event)
         );
 
         addText(
-            details,
+            card,
             "p",
+            "record-detail",
             `Certificate ID: ${
                 certificate.certificateId ||
-                certificate.verificationId ||
-                "Not provided"
+                certificate.verificationCode ||
+                getId(certificate) ||
+                "Not available"
             }`
         );
 
         addText(
-            details,
+            card,
             "p",
+            "record-detail",
             `Issued: ${formatDate(
-                certificate.issuedAt || certificate.createdAt
+                certificate.issuedAt ||
+                certificate.issueDate ||
+                certificate.createdAt
             )}`
         );
 
-        card.appendChild(details);
+        const certificateUrl =
+            certificate.certificateUrl ||
+            certificate.fileUrl ||
+            certificate.downloadUrl ||
+            certificate.pdfUrl ||
+            certificate.url;
+
+        if (certificateUrl) {
+            const link = createElement(
+                "a",
+                "primary-button",
+                "View / Download Certificate"
+            );
+
+            link.href = certificateUrl;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+
+            card.appendChild(link);
+        } else {
+            addText(
+                card,
+                "p",
+                "record-detail",
+                "No downloadable certificate link is available."
+            );
+        }
+
         container.appendChild(card);
     });
 }
 
-// --------------------------------------------------
-// 9. LOAD THE DASHBOARD
-// --------------------------------------------------
 
-async function loadDashboard() {
-    setPageMessage("Loading your dashboard...");
-
-    renderStudentProfile();
-
-    const token = getToken();
-
-    if (!token) {
-        setPageMessage(
-            "Please log in first. Your student login token was not found."
-        );
-
-        renderEmpty(
-            "events-list",
-            "Log in to load your registrations."
-        );
-
-        renderEmpty(
-            "attendance-list",
-            "Log in to load your attendance."
-        );
-
-        renderEmpty(
-            "certificates-list",
-            "Log in to load your certificates."
-        );
-
-        [
-            "registered-count",
-            "attendance-count",
-            "certificate-count"
-        ].forEach((id) => {
-            const element = document.getElementById(id);
-
-            if (element) {
-                element.textContent = "—";
-            }
-        });
-
-        return;
-    }
-
-    // Each section loads independently, so one failed API
-    // does not prevent the other sections from loading.
-    const results = await Promise.allSettled([
-        fetchStudentData(API.registrations),
-        fetchStudentData(API.attendance),
-        fetchStudentData(API.certificates)
-    ]);
-
-    const failures = [];
-
-    if (results[0].status === "fulfilled") {
-        const registrations = extractList(
-            results[0].value,
-            ["registrations", "data", "results"]
-        );
-
-        renderRegistrations(registrations);
-    } else {
-        const count = document.getElementById("registered-count");
-
-        if (count) {
-            count.textContent = "—";
-        }
-
-        renderEmpty(
-            "events-list",
-            "Could not load registrations. Check the API route and server logs."
-        );
-
-        failures.push(`Registrations: ${results[0].reason.message}`);
-    }
-
-    if (results[1].status === "fulfilled") {
-        const records = extractList(
-            results[1].value,
-            ["attendance", "records", "data", "results"]
-        );
-
-        renderAttendance(records);
-    } else {
-        const count = document.getElementById("attendance-count");
-
-        if (count) {
-            count.textContent = "—";
-        }
-
-        renderEmpty(
-            "attendance-list",
-            "Could not load attendance. Check the API route and server logs."
-        );
-
-        failures.push(`Attendance: ${results[1].reason.message}`);
-    }
-
-    if (results[2].status === "fulfilled") {
-        const certificates = extractList(
-            results[2].value,
-            ["certificates", "data", "results"]
-        );
-
-        renderCertificates(certificates);
-    } else {
-        const count = document.getElementById("certificate-count");
-
-        if (count) {
-            count.textContent = "—";
-        }
-
-        renderEmpty(
-            "certificates-list",
-            "Could not load certificates. Check the API route and server logs."
-        );
-
-        failures.push(`Certificates: ${results[2].reason.message}`);
-    }
-
-    if (failures.length > 0) {
-        setPageMessage(
-            "Some dashboard sections could not load. " +
-            failures.join(" | ")
-        );
-
-        console.error("Dashboard API errors:", failures);
-    } else {
-        setPageMessage("Your dashboard has been loaded successfully.");
-    }
-}
-
-// --------------------------------------------------
-// 10. LOGOUT
-// --------------------------------------------------
+// ==================== 14. LOGOUT ====================
 
 function logoutStudent() {
-    const confirmed = window.confirm("Do you want to log out?");
+    const confirmed = window.confirm(
+        "Are you sure you want to log out?"
+    );
 
     if (!confirmed) {
         return;
     }
 
-    // Remove the known token/name keys used by this example.
-    // If your login page uses a different key, clear that key too.
-    [
-        "token",
-        "authToken",
-        "studentName"
-    ].forEach((key) => {
-        localStorage.removeItem(key);
-        sessionStorage.removeItem(key);
-    });
+    clearLoginData();
 
-    // Change this URL if your login page is located elsewhere.
-    window.location.href = "../login/index.html";
+    // Update this destination if your login page uses another path.
+    redirectToLogin();
 }
 
-// --------------------------------------------------
-// 11. INITIALIZE THE PAGE
-// --------------------------------------------------
+
+// ==================== 15. REFRESH DASHBOARD ====================
+
+async function loadDashboard() {
+    if (!requireLogin()) {
+        return;
+    }
+
+    renderStudentProfile();
+
+    showPageMessage("Loading your dashboard...", "info");
+
+    // Load sections independently so one failed endpoint does not
+    // prevent the other sections from attempting to load.
+    const results = await Promise.allSettled([
+        loadRegistrations(),
+        loadAttendance(),
+        loadCertificates(),
+        loadBrowseEvents()
+    ]);
+
+    const failedSections = results.filter(
+        (result) => result.status === "rejected"
+    );
+
+    if (failedSections.length > 0) {
+        showPageMessage(
+            "Some dashboard sections could not be loaded.",
+            "error"
+        );
+    } else {
+        showPageMessage("", "info");
+    }
+}
+
+
+// ==================== 16. INITIALIZE DASHBOARD ====================
 
 document.addEventListener("DOMContentLoaded", () => {
     const logoutButton = document.getElementById("logout-button");
@@ -705,12 +1336,11 @@ document.addEventListener("DOMContentLoaded", () => {
         logoutButton.addEventListener("click", logoutStudent);
     }
 
-    loadDashboard().catch((error) => {
-        console.error("Dashboard initialization error:", error);
+    initializeEventBrowser();
 
-        setPageMessage(
-            "Unable to initialize the dashboard. " +
-            "Check the browser console for details."
-        );
-    });
+    // Keep initial statistic values consistent.
+    updateDashboardCounts();
+
+    // Load all student dashboard sections.
+    loadDashboard();
 });

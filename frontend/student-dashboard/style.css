@@ -323,3 +323,59 @@ a:focus-visible {
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+.event-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 16px 0;
+}
+
+.event-filters input,
+.event-filters select {
+    padding: 10px;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    font: inherit;
+}
+
+.event-filters input {
+    flex: 1;
+    min-width: 180px;
+}
+
+.event-filters button,
+.register-button {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    background: #2457d6;
+    color: white;
+    cursor: pointer;
+}
+
+.event-filters button:hover,
+.register-button:hover {
+    opacity: 0.9;
+}
+
+.register-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.event-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.event-card[hidden] {
+    display: none;
+}
+
+#browse-events-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+}

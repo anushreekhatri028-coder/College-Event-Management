@@ -1,115 +1,113 @@
-
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Dashboard | CampusEvents</title>
+
+    <meta
+        name="description"
+        content="Student dashboard for the College Event Management System"
+    >
+
+    <title>Student Dashboard | CampusConnect</title>
+
+    <!-- Student Dashboard CSS -->
     <link rel="stylesheet" href="style.css">
-    <script src="script.js" defer></script>
 </head>
+
 <body>
-    <aside class="sidebar">
-        <a class="brand" href="#">CampusEvents</a>
 
-        <p class="nav-heading">STUDENT MENU</p>
+    <!-- ==================== HEADER ==================== -->
+    <header class="dashboard-header">
+        <div class="header-container">
 
-        <a href="#overview" class="nav-link active">Overview</a>
-        <a href="#events" class="nav-link">My Events</a>
-        <a href="#attendance" class="nav-link">Attendance</a>
-        <a href="#certificates" class="nav-link">Certificates</a>
+            <a href="#dashboard-home" class="brand">
+                <div class="brand-logo">C</div>
 
-        <button id="logout-button" class="logout-button">
-            Log out
-        </button>
-    </aside>
-
-    <main class="main-content" id="overview">
-        <header class="topbar">
-            <div>
-                <p class="eyebrow">STUDENT PORTAL</p>
-                <h1>My Dashboard</h1>
-            </div>
-
-            <div class="profile">
-                <div class="avatar" id="avatar">S</div>
-                <div>
-                    <strong id="student-name">Student</strong>
-                    <p>Student account</p>
+                <div class="brand-text">
+                    <h1>CampusConnect</h1>
+                    <p>College Event Management</p>
                 </div>
-            </div>
-        </header>
+            </a>
 
-        <p id="page-message" class="page-message" role="status">
-            Loading your dashboard...
-        </p>
+            <nav class="main-navigation" aria-label="Main navigation">
+                <a href="#dashboard-home">Dashboard</a>
+                <a href="#browse-events-section">Browse Events</a>
+                <a href="#registered-events-section">My Registrations</a>
+                <a href="#attendance-section">Attendance</a>
+                <a href="#certificates-section">Certificates</a>
+            </nav>
 
-        <section class="stats-grid">
-            <article class="stat-card">
-                <p>Registered Events</p>
-                <h2 id="registered-count">—</h2>
-                <span>Events you've joined</span>
-            </article>
+            <button
+                type="button"
+                id="logout-button"
+                class="logout-button"
+            >
+                Logout
+            </button>
 
-            <article class="stat-card">
-                <p>Attendance Records</p>
-                <h2 id="attendance-count">—</h2>
-                <span>Records returned by the server</span>
-            </article>
+        </div>
+    </header>
 
-            <article class="stat-card">
-                <p>Certificates</p>
-                <h2 id="certificate-count">—</h2>
-                <span>Certificates earned</span>
-            </article>
-        </section>
 
-        <section class="content-card" id="events">
-            <div class="section-heading">
-                <div>
-                    <h2>My Registered Events</h2>
-                    <p>Events associated with your account</p>
-                </div>
-            </div>
+    <!-- ==================== MAIN CONTENT ==================== -->
+    <main class="dashboard-main">
 
-            <div id="events-list" class="list-container">
-                <p class="empty-state">Loading registered events...</p>
-            </div>
-        </section>
+        <!-- General status and error messages -->
+        <div
+            id="page-message"
+            class="page-message"
+            role="status"
+            aria-live="polite"
+        ></div>
 
-        <section class="content-card" id="attendance">
-            <div class="section-heading">
-                <div>
-                    <h2>My Attendance</h2>
-                    <p>Your recorded event attendance</p>
-                </div>
-            </div>
 
-            <div id="attendance-list" class="list-container">
-                <p class="empty-state">Loading attendance...</p>
-            </div>
-        </section>
+        <!-- ==================== WELCOME SECTION ==================== -->
+        <section
+            id="dashboard-home"
+            class="welcome-section"
+        >
+            <div class="welcome-content">
 
-        <section class="content-card" id="certificates">
-            <div class="section-heading">
-                <div>
-                    <h2>My Certificates</h2>
-                    <p>Certificates associated with your account</p>
-                </div>
+                <p class="section-eyebrow">STUDENT PORTAL</p>
 
-                <a class="text-link" href="../certificate-verification/index.html">
-                    Verify a certificate
+                <h2>
+                    Welcome back,
+                    <span id="student-name">Student</span>!
+                </h2>
+
+                <p>
+                    Discover upcoming college events, manage your
+                    registrations, track your attendance, and access
+                    your certificates from one place.
+                </p>
+
+                <a
+                    href="#browse-events-section"
+                    class="primary-button"
+                >
+                    Explore Events
                 </a>
+
             </div>
 
-            <div id="certificates-list" class="list-container">
-                <p class="empty-state">Loading certificates...</p>
+            <div
+                id="avatar"
+                class="student-avatar"
+                aria-label="Student avatar"
+            >
+                S
             </div>
         </section>
 
-        <footer>
-            College Event Management System
-        </footer>
-    </main>
-</body>
-</html>
+
+        <!-- ==================== STATISTICS ==================== -->
+        <section
+            class="statistics-grid"
+            aria-label="Student dashboard statistics"
+        >
+
+            <!-- Registration count -->
+            <article class="stat-card">
+                <div class="stat
