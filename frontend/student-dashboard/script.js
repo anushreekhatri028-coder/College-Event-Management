@@ -1,17 +1,29 @@
 
+/*
+ * College Event Management System
+ * Student Dashboard — Day 35 + Day 36
+ *
+ * File:
+ * frontend/student-dashboard/script.js
+ */
+
 const API_BASE_URL = "http://localhost:5000/api";
 
-// Change these three paths if your backend uses different routes.
+// IMPORTANT:
+// Confirm these paths against backend/src/routes/registration.routes.js,
+// attendance.routes.js, and certificate.routes.js.
+// Change them if your actual backend uses different paths.
 const API = {
     registrations: `${API_BASE_URL}/registrations/my`,
     attendance: `${API_BASE_URL}/attendance/my`,
     certificates: `${API_BASE_URL}/certificates/my`
 };
 
-const pageMessage = document.getElementById("page-message");
+// --------------------------------------------------
+// 1. AUTHENTICATION HELPERS
+// --------------------------------------------------
 
 function getToken() {
-    // Use the key your existing login page saves the token under.
     return (
         localStorage.getItem("token") ||
         localStorage.getItem("authToken") ||
@@ -19,6 +31,60 @@ function getToken() {
         sessionStorage.getItem("authToken")
     );
 }
+
+function getSavedStudentName() {
+    return (
+        localStorage.getItem("studentName") ||
+        sessionStorage.getItem("studentName") ||
+        ""
+    );
+}
+
+// --------------------------------------------------
+// 2. API REQUEST HELPER
+// --------------------------------------------------
+
+async function fetchStudentData(url, options = {}) {
+    const token = getToken();
+
+    if (!token) {
+        throw new Error(
+            "Your login token was not found. Please log in as a student."
+        );
+    }
+
+    const response = await fetch(url, {
+        ...options,
+        headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+            ...(options.headers || {})
+        }
+    });
+
+    let data = {};
+
+    try {
+        const responseText = await response.text();
+        data = responseText ? JSON.parse(responseText) : {};
+    } catch {
+        throw new Error("The server returned an invalid JSON response.");
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            data.message ||
+            data.error ||
+            `Request failed with status ${response.status}`
+        );
+    }
+
+    return data;
+}
+
+// --------------------------------------------------
+// 3. RESPONSE HELPERS
+// --------------------------------------------------
 
 function extractList(data, possibleKeys) {
     if (Array.isArray(data)) {
@@ -35,93 +101,194 @@ function extractList(data, possibleKeys) {
         }
     }
 
+    // Support common nested response formats.
+    if (data.data && typeof data.data === "object") {
+        if (Array.isArray(data.data)) {
+            return data.data;
+        }
+
+        for (const key of possibleKeys) {
+            if (Array.isArray(data.data[key])) {
+                return data.data[key];
+            }
+        }
+    }
+
     return [];
 }
 
-async function fetchStudentData(url) {
-    const token = getToken();
-
-    if (!token) {
-        throw new Error("Please log in as a student to view your dashboard.");
-    }
-
-    const response = await fetch(url, {
-        method: "GET",
-        headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json"
-        }
-    });
-
-    let data;
-
-    try {
-        data = await response.json();
-    } catch {
-        throw new Error("The server returned an invalid response.");
-    }
-
-    if (!response.ok) {
-        throw new Error(
-            data.message || `Request failed with status ${response.status}`
-        );
-    }
-
-    return data;
-}
-
 function formatDate(value) {
-    if (!value) return "Date not provided";
+    if (!value) {
+        return "Not provided";
+    }
 
     const date = new Date(value);
 
     if (Number.isNaN(date.getTime())) {
-        return "Date not available";
+        return "Not available";
     }
 
-    return date.toLocaleDateString("en-IN", {
+    return date.toLocaleString("en-IN", {
         day: "2-digit",
         month: "short",
-        year: "numeric"
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
     });
 }
 
 function getEvent(registration) {
-    return registration.event || registration.eventId || {};
+    return (
+        registration.event ||
+        registration.eventId ||
+        registration.eventDetails ||
+        {}
+    );
+}
+
+function getEventId(registration) {
+    const event = getEvent(registration);
+
+    if (typeof event === "string") {
+        return event;
+    }
+
+    return (
+        event._id ||
+        event.id ||
+        (typeof registration.eventId === "string"
+            ? registration.eventId
+            : null) ||
+        registration.event?._id ||
+        null
+    );
 }
 
 function addText(parent, tag, text, className = "") {
     const element = document.createElement(tag);
-    element.textContent = text;
+
+    // textContent avoids treating API-provided text as HTML.
+    element.textContent = String(text ?? "");
 
     if (className) {
         element.className = className;
     }
 
     parent.appendChild(element);
+
     return element;
 }
 
 function renderEmpty(containerId, message) {
     const container = document.getElementById(containerId);
+
+    if (!container) {
+        return;
+    }
+
     container.replaceChildren();
     addText(container, "p", message, "empty-state");
 }
 
+function setPageMessage(message) {
+    const element = document.getElementById("page-message");
+
+    if (element) {
+        element.textContent = message;
+    }
+}
+
+// --------------------------------------------------
+// 4. STUDENT PROFILE
+// --------------------------------------------------
+
+function renderStudentProfile() {
+    const name = getSavedStudentName();
+
+    const nameElement = document.getElementById("student-name");
+    const avatarElement = document.getElementById("avatar");
+
+    if (name && nameElement) {
+        nameElement.textContent = name;
+    }
+
+    if (name && avatarElement) {
+        avatarElement.textContent = name.charAt(0).toUpperCase();
+    }
+}
+
+// --------------------------------------------------
+// 5. REGISTERED EVENTS
+// --------------------------------------------------
+
+function canCancelRegistration(registration) {
+    const event = getEvent(registration);
+
+    const eventStatus = String(event.status || "").toLowerCase();
+    const registrationStatus = String(
+        registration.status || ""
+    ).toLowerCase();
+
+    // Do not show cancellation for completed/cancelled events.
+    if (
+        eventStatus === "cancelled" ||
+        eventStatus === "completed"
+    ) {
+        return false;
+    }
+
+    if (
+        registrationStatus === "cancelled" ||
+        registrationStatus === "canceled" ||
+        registrationStatus === "completed"
+    ) {
+        return false;
+    }
+
+    // Do not offer cancellation after the event has started.
+    // The backend must enforce the actual cancellation policy too.
+    const eventDate = event.date || event.eventDate;
+
+    if (eventDate) {
+        const parsedDate = new Date(eventDate);
+
+        if (
+            !Number.isNaN(parsedDate.getTime()) &&
+            parsedDate <= new Date()
+        ) {
+            return false;
+        }
+    }
+
+    return Boolean(getEventId(registration));
+}
+
 function renderRegistrations(registrations) {
     const container = document.getElementById("events-list");
+
+    if (!container) {
+        return;
+    }
+
     container.replaceChildren();
 
-    document.getElementById("registered-count").textContent =
-        registrations.length;
+    const countElement = document.getElementById("registered-count");
+
+    if (countElement) {
+        countElement.textContent = registrations.length;
+    }
 
     if (registrations.length === 0) {
-        renderEmpty("events-list", "You have not registered for any events yet.");
+        renderEmpty(
+            "events-list",
+            "You have not registered for any events yet."
+        );
         return;
     }
 
     registrations.forEach((registration) => {
         const event = getEvent(registration);
+
         const card = document.createElement("article");
         card.className = "data-item";
 
@@ -145,28 +312,128 @@ function renderRegistrations(registrations) {
             `Venue: ${event.venue || "Not provided"}`
         );
 
-        const status = registration.status || "Registered";
-        addText(card, "span", status, "status");
+        if (event.club && typeof event.club === "object") {
+            addText(
+                details,
+                "p",
+                `Club: ${event.club.name || "Not provided"}`
+            );
+        }
+
+        addText(
+            card,
+            "span",
+            registration.status || "Registered",
+            "status"
+        );
 
         card.prepend(details);
+
+        if (canCancelRegistration(registration)) {
+            const cancelButton = document.createElement("button");
+
+            cancelButton.type = "button";
+            cancelButton.className = "cancel-button";
+            cancelButton.textContent = "Cancel registration";
+
+            cancelButton.addEventListener("click", async () => {
+                cancelButton.disabled = true;
+                cancelButton.textContent = "Cancelling...";
+
+                try {
+                    await cancelRegistration(registration);
+                } finally {
+                    cancelButton.disabled = false;
+                    cancelButton.textContent = "Cancel registration";
+                }
+            });
+
+            card.appendChild(cancelButton);
+        }
+
         container.appendChild(card);
     });
 }
 
+// --------------------------------------------------
+// 6. CANCEL REGISTRATION
+// --------------------------------------------------
+
+async function cancelRegistration(registration) {
+    const eventId = getEventId(registration);
+
+    if (!eventId) {
+        alert(
+            "The event ID was not found in this registration. " +
+            "Check the registration API response."
+        );
+        return;
+    }
+
+    const confirmed = window.confirm(
+        "Are you sure you want to cancel your registration for this event?"
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        const result = await fetchStudentData(
+            `${API_BASE_URL}/registrations/event/${encodeURIComponent(eventId)}`,
+            {
+                method: "DELETE"
+            }
+        );
+
+        alert(
+            result.message ||
+            "Registration cancellation request completed."
+        );
+
+        // Reload all sections from the server.
+        await loadDashboard();
+
+    } catch (error) {
+        console.error("Cancellation error:", error);
+
+        alert(
+            error.message ||
+            "Unable to cancel the registration."
+        );
+    }
+}
+
+// --------------------------------------------------
+// 7. ATTENDANCE
+// --------------------------------------------------
+
 function renderAttendance(records) {
     const container = document.getElementById("attendance-list");
+
+    if (!container) {
+        return;
+    }
+
     container.replaceChildren();
 
-    document.getElementById("attendance-count").textContent =
-        records.length;
+    const countElement = document.getElementById("attendance-count");
+
+    if (countElement) {
+        countElement.textContent = records.length;
+    }
 
     if (records.length === 0) {
-        renderEmpty("attendance-list", "No attendance records found.");
+        renderEmpty(
+            "attendance-list",
+            "No attendance records found."
+        );
         return;
     }
 
     records.forEach((record) => {
         const event = getEvent(record);
+
         const card = document.createElement("article");
         card.className = "data-item";
 
@@ -185,6 +452,12 @@ function renderAttendance(records) {
         );
 
         addText(
+            details,
+            "p",
+            `Event date: ${formatDate(event.date || event.eventDate)}`
+        );
+
+        addText(
             card,
             "span",
             record.status || "Recorded",
@@ -196,12 +469,24 @@ function renderAttendance(records) {
     });
 }
 
+// --------------------------------------------------
+// 8. CERTIFICATES
+// --------------------------------------------------
+
 function renderCertificates(certificates) {
     const container = document.getElementById("certificates-list");
+
+    if (!container) {
+        return;
+    }
+
     container.replaceChildren();
 
-    document.getElementById("certificate-count").textContent =
-        certificates.length;
+    const countElement = document.getElementById("certificate-count");
+
+    if (countElement) {
+        countElement.textContent = certificates.length;
+    }
 
     if (certificates.length === 0) {
         renderEmpty(
@@ -230,14 +515,18 @@ function renderCertificates(certificates) {
             details,
             "p",
             `Certificate ID: ${
-                certificate.certificateId || "Not provided"
+                certificate.certificateId ||
+                certificate.verificationId ||
+                "Not provided"
             }`
         );
 
         addText(
             details,
             "p",
-            `Issued: ${formatDate(certificate.issuedAt || certificate.createdAt)}`
+            `Issued: ${formatDate(
+                certificate.issuedAt || certificate.createdAt
+            )}`
         );
 
         card.appendChild(details);
@@ -245,44 +534,61 @@ function renderCertificates(certificates) {
     });
 }
 
-async function loadDashboard() {
-    pageMessage.textContent = "Loading your dashboard...";
+// --------------------------------------------------
+// 9. LOAD THE DASHBOARD
+// --------------------------------------------------
 
-    const nameElement = document.getElementById("student-name");
-    const avatarElement = document.getElementById("avatar");
+async function loadDashboard() {
+    setPageMessage("Loading your dashboard...");
+
+    renderStudentProfile();
 
     const token = getToken();
 
     if (!token) {
-        pageMessage.textContent =
-            "Please log in first. Your student login token was not found.";
+        setPageMessage(
+            "Please log in first. Your student login token was not found."
+        );
 
-        renderEmpty("events-list", "Log in to load your registrations.");
-        renderEmpty("attendance-list", "Log in to load your attendance.");
-        renderEmpty("certificates-list", "Log in to load your certificates.");
+        renderEmpty(
+            "events-list",
+            "Log in to load your registrations."
+        );
 
-        document.getElementById("registered-count").textContent = "—";
-        document.getElementById("attendance-count").textContent = "—";
-        document.getElementById("certificate-count").textContent = "—";
+        renderEmpty(
+            "attendance-list",
+            "Log in to load your attendance."
+        );
+
+        renderEmpty(
+            "certificates-list",
+            "Log in to load your certificates."
+        );
+
+        [
+            "registered-count",
+            "attendance-count",
+            "certificate-count"
+        ].forEach((id) => {
+            const element = document.getElementById(id);
+
+            if (element) {
+                element.textContent = "—";
+            }
+        });
+
         return;
     }
 
+    // Each section loads independently, so one failed API
+    // does not prevent the other sections from loading.
     const results = await Promise.allSettled([
         fetchStudentData(API.registrations),
         fetchStudentData(API.attendance),
         fetchStudentData(API.certificates)
     ]);
 
-    const labels = ["registrations", "attendance", "certificates"];
-    const failed = [];
-
-    results.forEach((result, index) => {
-        if (result.status === "rejected") {
-            failed.push(
-                `${labels[index]}: ${result.reason.message}`
-            );
-        }
-    });
+    const failures = [];
 
     if (results[0].status === "fulfilled") {
         const registrations = extractList(
@@ -292,20 +598,40 @@ async function loadDashboard() {
 
         renderRegistrations(registrations);
     } else {
-        document.getElementById("registered-count").textContent = "—";
-        renderEmpty("events-list", "Could not load registrations.");
+        const count = document.getElementById("registered-count");
+
+        if (count) {
+            count.textContent = "—";
+        }
+
+        renderEmpty(
+            "events-list",
+            "Could not load registrations. Check the API route and server logs."
+        );
+
+        failures.push(`Registrations: ${results[0].reason.message}`);
     }
 
     if (results[1].status === "fulfilled") {
-        const attendance = extractList(
+        const records = extractList(
             results[1].value,
             ["attendance", "records", "data", "results"]
         );
 
-        renderAttendance(attendance);
+        renderAttendance(records);
     } else {
-        document.getElementById("attendance-count").textContent = "—";
-        renderEmpty("attendance-list", "Could not load attendance.");
+        const count = document.getElementById("attendance-count");
+
+        if (count) {
+            count.textContent = "—";
+        }
+
+        renderEmpty(
+            "attendance-list",
+            "Could not load attendance. Check the API route and server logs."
+        );
+
+        failures.push(`Attendance: ${results[1].reason.message}`);
     }
 
     if (results[2].status === "fulfilled") {
@@ -316,40 +642,75 @@ async function loadDashboard() {
 
         renderCertificates(certificates);
     } else {
-        document.getElementById("certificate-count").textContent = "—";
-        renderEmpty("certificates-list", "Could not load certificates.");
+        const count = document.getElementById("certificate-count");
+
+        if (count) {
+            count.textContent = "—";
+        }
+
+        renderEmpty(
+            "certificates-list",
+            "Could not load certificates. Check the API route and server logs."
+        );
+
+        failures.push(`Certificates: ${results[2].reason.message}`);
     }
 
-    if (failed.length > 0) {
-        pageMessage.textContent =
-            "Some dashboard sections could not load. " + failed.join(" | ");
+    if (failures.length > 0) {
+        setPageMessage(
+            "Some dashboard sections could not load. " +
+            failures.join(" | ")
+        );
+
+        console.error("Dashboard API errors:", failures);
     } else {
-        pageMessage.textContent = "Your dashboard has been loaded.";
-    }
-
-    // Populate the name only if your login flow already stores it.
-    const savedName =
-        localStorage.getItem("studentName") ||
-        sessionStorage.getItem("studentName");
-
-    if (savedName) {
-        nameElement.textContent = savedName;
-        avatarElement.textContent = savedName.charAt(0).toUpperCase();
+        setPageMessage("Your dashboard has been loaded successfully.");
     }
 }
 
-document.getElementById("logout-button").addEventListener("click", () => {
-    // Clear only the known login-related keys used by this example.
-    ["token", "authToken", "studentName"].forEach((key) => {
+// --------------------------------------------------
+// 10. LOGOUT
+// --------------------------------------------------
+
+function logoutStudent() {
+    const confirmed = window.confirm("Do you want to log out?");
+
+    if (!confirmed) {
+        return;
+    }
+
+    // Remove the known token/name keys used by this example.
+    // If your login page uses a different key, clear that key too.
+    [
+        "token",
+        "authToken",
+        "studentName"
+    ].forEach((key) => {
         localStorage.removeItem(key);
         sessionStorage.removeItem(key);
     });
 
-    window.location.reload();
-});
+    // Change this URL if your login page is located elsewhere.
+    window.location.href = "../login/index.html";
+}
 
-loadDashboard().catch((error) => {
-    console.error("Dashboard loading error:", error);
-    pageMessage.textContent =
-        "Unable to load the dashboard. Check your backend and API routes.";
+// --------------------------------------------------
+// 11. INITIALIZE THE PAGE
+// --------------------------------------------------
+
+document.addEventListener("DOMContentLoaded", () => {
+    const logoutButton = document.getElementById("logout-button");
+
+    if (logoutButton) {
+        logoutButton.addEventListener("click", logoutStudent);
+    }
+
+    loadDashboard().catch((error) => {
+        console.error("Dashboard initialization error:", error);
+
+        setPageMessage(
+            "Unable to initialize the dashboard. " +
+            "Check the browser console for details."
+        );
+    });
 });
