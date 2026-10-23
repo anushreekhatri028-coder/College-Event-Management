@@ -379,3 +379,133 @@ a:focus-visible {
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 16px;
 }
+/* Day 39: Registration status badges */
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin: 8px 8px 8px 0;
+    border: 1px solid transparent;
+}
+
+.status-registered,
+.status-confirmed {
+    color: #166534;
+    background-color: #dcfce7;
+    border-color: #bbf7d0;
+}
+
+.status-cancelled {
+    color: #991b1b;
+    background-color: #fee2e2;
+    border-color: #fecaca;
+}
+
+.status-attended,
+.status-completed {
+    color: #1e40af;
+    background-color: #dbeafe;
+    border-color: #bfdbfe;
+}
+
+.status-pending {
+    color: #92400e;
+    background-color: #fef3c7;
+    border-color: #fde68a;
+}
+
+.status-default {
+    color: #374151;
+    background-color: #f3f4f6;
+    border-color: #e5e7eb;
+}
+
+/* Consistent dashboard action buttons */
+
+.secondary-button,
+.primary-button,
+.cancel-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 14px;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease,
+                transform 0.2s ease;
+    margin: 6px 8px 6px 0;
+}
+
+.secondary-button {
+    color: #1d4ed8;
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+}
+
+.secondary-button:hover {
+    background-color: #dbeafe;
+}
+
+.primary-button {
+    color: #ffffff;
+    background-color: #2563eb;
+    border: 1px solid #2563eb;
+}
+
+.primary-button:hover {
+    background-color: #1d4ed8;
+}
+
+.cancel-button {
+    color: #b91c1c;
+    background-color: #fff1f2;
+    border: 1px solid #fecdd3;
+}
+
+.cancel-button:hover {
+    background-color: #ffe4e6;
+}
+
+.secondary-button:disabled,
+.primary-button:disabled,
+.cancel-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.secondary-button:focus-visible,
+.primary-button:focus-visible,
+.cancel-button:focus-visible {
+    outline: 3px solid #93c5fd;
+    outline-offset: 2px;
+}
+
+.status-badge + button {
+    margin-left: 4px;
+}
+
+@media (max-width: 600px) {
+    .secondary-button,
+    .primary-button,
+    .cancel-button {
+        max-width: 100%;
+        margin-right: 5px;
+    }
+
+    .status-badge {
+        font-size: 11px;
+        padding: 5px 10px;
+    }
+}

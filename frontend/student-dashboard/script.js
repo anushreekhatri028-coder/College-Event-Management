@@ -729,7 +729,7 @@ function renderRegistrations(registrations) {
 
     container.replaceChildren();
 
-    if (!registrations.length) {
+    if (!registrations || registrations.length === 0) {
         showMessage(
             "registrations-message",
             "You have not registered for any events yet."
@@ -740,6 +740,7 @@ function renderRegistrations(registrations) {
     clearMessage("registrations-message");
 
     registrations.forEach((registration) => {
+        // Get the event associated with this registration.
         const event = getRegistrationEvent(registration);
 
         const eventId =
@@ -748,6 +749,7 @@ function renderRegistrations(registrations) {
 
         const card = createElement("article", "data-item");
 
+        // Event title.
         addText(
             card,
             "h3",
@@ -755,6 +757,7 @@ function renderRegistrations(registrations) {
             getEventName(event || {})
         );
 
+        // Event date.
         addText(
             card,
             "p",
@@ -762,6 +765,7 @@ function renderRegistrations(registrations) {
             `Date: ${formatDate(event?.date)}`
         );
 
+        // Event venue.
         addText(
             card,
             "p",
@@ -769,18 +773,78 @@ function renderRegistrations(registrations) {
             `Venue: ${event?.venue || "Not specified"}`
         );
 
-        const registrationStatus =
+        // Event category.
+        if (event) {
+            addText(
+                card,
+                "p",
+                "",
+                `Category: ${getEventCategory(event)}`
+            );
+        }
+
+        // Normalize registration status for consistent display.
+        const rawStatus =
             registration.status ||
             registration.registrationStatus ||
-            "Registered";
+            "registered";
 
-        addText(
+        const normalizedStatus = String(rawStatus)
+            .trim()
+            .toLowerCase()
+            .replace(/[\s-]+/g, "_");
+
+        // Map backend statuses to readable labels and CSS classes.
+        const statusDetails = {
+            registered: {
+                label: "Registered",
+                className: "status-registered"
+            },
+            confirmed: {
+                label: "Confirmed",
+                className: "status-confirmed"
+            },
+            cancelled: {
+                label: "Cancelled",
+                className: "status-cancelled"
+            },
+            attended: {
+                label: "Attended",
+                className: "status-attended"
+            },
+            completed: {
+                label: "Completed",
+                className: "status-completed"
+            },
+            pending: {
+                label: "Pending",
+                className: "status-pending"
+            }
+        };
+
+        const statusInfo = statusDetails[normalizedStatus] || {
+            label: String(rawStatus)
+                .replace(/[_-]+/g, " ")
+                .replace(/\b\w/g, (character) =>
+                    character.toUpperCase()
+                ),
+            className: "status-default"
+        };
+
+        // Display the registration status badge.
+        const statusBadge = addText(
             card,
             "span",
-            "status",
-            registrationStatus
+            `status-badge ${statusInfo.className}`,
+            statusInfo.label
         );
 
+        statusBadge.setAttribute(
+            "aria-label",
+            `Registration status: ${statusInfo.label}`
+        );
+
+        // View Details button.
         if (eventId) {
             const detailsButton = createButton(
                 "View Details",
@@ -794,13 +858,24 @@ function renderRegistrations(registrations) {
             card.appendChild(detailsButton);
         }
 
-        const canCancel =
-            registration.status !== "cancelled" &&
-            registration.status !== "attended" &&
-            event?.status !== "cancelled" &&
-            event?.status !== "completed";
+        // Show cancellation only when the registration and event
+        // are eligible for cancellation.
+        const registrationCannotBeCancelled = [
+            "cancelled",
+            "attended",
+            "completed"
+        ].includes(normalizedStatus);
 
-        if (eventId && canCancel) {
+        const eventCannotBeCancelled =
+            event?.status === "cancelled" ||
+            event?.status === "completed";
+
+        const canCancel =
+            Boolean(eventId) &&
+            !registrationCannotBeCancelled &&
+            !eventCannotBeCancelled;
+
+        if (canCancel) {
             const cancelButton = createButton(
                 "Cancel Registration",
                 "cancel-button",
@@ -810,38 +885,9 @@ function renderRegistrations(registrations) {
             card.appendChild(cancelButton);
         }
 
+        // Add the completed card to the registrations section.
         container.appendChild(card);
     });
-}
-
-async function cancelRegistration(eventId, button = null) {
-    if (!eventId) {
-        alert("Unable to identify this event.");
-        return;
-    }
-
-    const confirmed = window.confirm(
-        "Are you sure you want to cancel your registration for this event?"
-    );
-
-    if (!confirmed) return;
-
-    setButtonLoading(button, true, "Cancelling...");
-
-    try {
-        await apiRequest(API.cancelRegistration(eventId), {
-            method: "DELETE"
-        });
-
-        alert("Your registration has been cancelled.");
-
-        await loadRegistrations();
-        await loadBrowseEvents();
-    } catch (error) {
-        alert(error.message || "Unable to cancel registration.");
-    } finally {
-        setButtonLoading(button, false);
-    }
 }
 
 
