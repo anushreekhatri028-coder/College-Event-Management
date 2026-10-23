@@ -1,102 +1,94 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Certificate Verification | College Events</title>
+
     <link rel="stylesheet" href="style.css">
     <script src="script.js" defer></script>
 </head>
 <body>
-    <header class="navbar">
-        <a class="brand" href="#">CampusEvents</a>
-        <span class="nav-label">Certificate Verification</span>
+    <header class="verification-header">
+        <div class="header-content">
+            <a href="../student-dashboard/index.html" class="brand">
+                College Events
+            </a>
+
+            <a href="../student-dashboard/index.html" class="back-link">
+                Back to Dashboard
+            </a>
+        </div>
     </header>
 
-    <main class="page">
+    <main class="verification-main">
         <section class="verification-card">
-            <div class="icon-circle" aria-hidden="true">✓</div>
+            <p class="eyebrow">CERTIFICATE SERVICES</p>
 
-            <p class="eyebrow">OFFICIAL VERIFICATION PORTAL</p>
-            <h1>Verify a Certificate</h1>
+            <h1>Certificate Verification</h1>
 
-            <p class="description">
-                Enter the unique certificate ID to verify a participation
-                certificate issued through our college event platform.
+            <p class="intro">
+                Check the authenticity of a certificate issued for a
+                college event.
             </p>
 
-            <form id="verification-form">
-                <label for="certificateId">Certificate ID</label>
+            <div id="verification-message"
+                 class="message"
+                 role="status"
+                 aria-live="polite">
+                Reading certificate details...
+            </div>
 
-                <input
-                    type="text"
-                    id="certificateId"
-                    name="certificateId"
-                    placeholder="e.g. CERT-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                    autocomplete="off"
-                    required
-                    maxlength="110"
-                >
+            <section id="certificate-result"
+                     class="certificate-result"
+                     hidden>
+                <div id="result-icon" class="result-icon"></div>
 
-                <button type="submit" id="verify-button">
-                    Verify Certificate
-                </button>
-            </form>
+                <h2 id="result-title">Verification Result</h2>
 
-            <p id="status-message" class="status-message"
-               role="status" aria-live="polite"></p>
+                <p id="result-description"></p>
 
-            <section id="result-card" class="result-card" hidden>
-                <div class="result-heading">
-                    <span class="verified-icon" aria-hidden="true">✓</span>
-                    <div>
-                        <h2>Certificate Verified</h2>
-                        <p>This certificate record was found.</p>
-                    </div>
-                </div>
-
-                <div class="details">
+                <div class="certificate-details">
                     <div class="detail-row">
                         <span>Certificate ID</span>
-                        <strong id="result-id"></strong>
+                        <strong id="certificate-id">—</strong>
                     </div>
 
                     <div class="detail-row">
-                        <span>Student Name</span>
-                        <strong id="result-student"></strong>
+                        <span>Recipient</span>
+                        <strong id="recipient-name">—</strong>
                     </div>
 
                     <div class="detail-row">
-                        <span>Event Title</span>
-                        <strong id="result-event"></strong>
+                        <span>Event</span>
+                        <strong id="event-name">—</strong>
                     </div>
 
                     <div class="detail-row">
-                        <span>Event Date</span>
-                        <strong id="result-event-date"></strong>
+                        <span>Issue Date</span>
+                        <strong id="issue-date">—</strong>
                     </div>
 
                     <div class="detail-row">
-                        <span>Venue</span>
-                        <strong id="result-venue"></strong>
-                    </div>
-
-                    <div class="detail-row">
-                        <span>Issued On</span>
-                        <strong id="result-issued-date"></strong>
+                        <span>Status</span>
+                        <strong id="certificate-status">—</strong>
                     </div>
                 </div>
             </section>
 
-            <p class="disclaimer">
-                Verification confirms that a matching certificate record
-                exists in the college event system.
-            </p>
+            <button id="retry-button" type="button" hidden>
+                Try Again
+            </button>
+
+            <a class="dashboard-button"
+               href="../student-dashboard/index.html">
+                Return to Dashboard
+            </a>
         </section>
     </main>
 
-    <footer>
+    <footer class="verification-footer">
         <p>College Event Management System</p>
     </footer>
 </body>

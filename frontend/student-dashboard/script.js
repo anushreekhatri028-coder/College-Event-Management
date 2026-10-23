@@ -1,4 +1,9 @@
- 
+
+"use strict";
+
+/* =========================================================
+   1. CONFIGURATION
+========================================================= */
 
 const API_BASE_URL = "http://localhost:5000/api";
 
@@ -9,75 +14,19 @@ const API = {
     myCertificates: `${API_BASE_URL}/certificates/my`,
 
     registerForEvent: (eventId) =>
-        `${API_BASE_URL}/registrations/event/${eventId}`,
+        `${API_BASE_URL}/registrations/event/${encodeURIComponent(eventId)}`,
 
     cancelRegistration: (eventId) =>
-        `${API_BASE_URL}/registrations/event/${eventId}`
+        `${API_BASE_URL}/registrations/event/${encodeURIComponent(eventId)}`
 };
 
 
-// -------------------- 2. AUTHENTICATION --------------------
-
-function getToken() {
-    return (
-        localStorage.getItem("token") ||
-        sessionStorage.getItem("token") ||
-        localStorage.getItem("authToken") ||
-        sessionStorage.getItem("authToken")
-    );
-}
-
-function logoutStudent() {
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("token");
-    localStorage.removeItem("authToken");
-    sessionStorage.removeItem("authToken");
-
-    // Change this path if your login page is located elsewhere.
-    window.location.href = "../login/index.html";
-}
-
-
-// -------------------- 3. GENERAL HELPER FUNCTIONS --------------------
+/* =========================================================
+   2. COMMON HELPERS
+========================================================= */
 
 function getElement(id) {
     return document.getElementById(id);
-}
-
-function setText(id, value) {
-    const element = getElement(id);
-
-    if (element) {
-        element.textContent = value ?? "";
-    }
-}
-
-function showMessage(id, message, type = "info") {
-    const element = getElement(id);
-
-    if (!element) return;
-
-    element.textContent = message;
-    element.className = "page-message";
-
-    if (type === "error") {
-        element.classList.add("error-message");
-    } else if (type === "success") {
-        element.classList.add("success-message");
-    } else if (type === "info") {
-        element.classList.add("info-message");
-    }
-
-    element.hidden = !message;
-}
-
-function clearMessage(id) {
-    const element = getElement(id);
-
-    if (element) {
-        element.textContent = "";
-        element.hidden = true;
-    }
 }
 
 function createElement(tag, className = "", text = "") {
@@ -100,128 +49,102 @@ function addText(parent, tag, className, text) {
     return element;
 }
 
-function createButton(text, className, onClick) {
-    const button = createElement("button", className, text);
-
+function createButton(label, className, onClick) {
+    const button = createElement("button", className, label);
     button.type = "button";
     button.addEventListener("click", onClick);
-
     return button;
 }
 
-function setButtonLoading(button, loading, loadingText = "Please wait...") {
-    if (!button) return;
+function showMessage(elementId, message, type = "info") {
+    const element = getElement(elementId);
 
-    if (loading) {
-        button.dataset.originalText = button.textContent;
-        button.textContent = loadingText;
-        button.disabled = true;
-    } else {
-        button.textContent =
-            button.dataset.originalText || button.textContent;
+    if (!element) return;
 
-        button.disabled = false;
-        delete button.dataset.originalText;
-    }
+    element.textContent = message;
+    element.className = `page-message ${type}`;
+    element.hidden = false;
 }
 
-function formatDate(dateValue) {
-    if (!dateValue) return "Date not available";
+function clearMessage(elementId) {
+    const element = getElement(elementId);
 
-    const date = new Date(dateValue);
+    if (!element) return;
 
-    if (Number.isNaN(date.getTime())) {
-        return "Invalid date";
-    }
-
-    return date.toLocaleString("en-IN", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-    });
+    element.textContent = "";
+    element.hidden = true;
 }
 
-function formatDateOnly(dateValue) {
-    if (!dateValue) return "Date not available";
-
-    const date = new Date(dateValue);
-
-    if (Number.isNaN(date.getTime())) {
-        return "Invalid date";
-    }
-
-    return date.toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "long",
-        year: "numeric"
-    });
+function setPageMessage(message, type = "info") {
+    showMessage("page-message", message, type);
 }
 
-function getId(value) {
-    if (!value) return "";
-
-    if (typeof value === "string") {
-        return value;
-    }
-
-    if (typeof value === "object") {
-        return String(value._id || value.id || "");
-    }
-
-    return "";
+function clearPageMessage() {
+    clearMessage("page-message");
 }
 
-function extractList(data, possibleKeys = []) {
-    if (Array.isArray(data)) {
+function getToken() {
+    return (
+        localStorage.getItem("token") ||
+        localStorage.getItem("authToken") ||
+        sessionStorage.getItem("token") ||
+        sessionStorage.getItem("authToken")
+    );
+}
+
+function getLoggedInUser() {
+    const possibleKeys = ["user", "currentUser", "loggedInUser"];
+
+    for (const key of possibleKeys) {
+        const rawValue =
+            localStorage.getItem(key) ||
+            sessionStorage.getItem(key);
+
+        if (!rawValue) continue;
+
+        try {
+            return JSON.parse(rawValue);
+        } catch (error) {
+            console.warn(`Could not parse stored ${key}.`, error);
+        }
+    }
+
+    return null;
+}
+
+function getErrorMessage(data, fallback) {
+    if (typeof data === "string" && data.trim()) {
         return data;
     }
 
-    if (!data || typeof data !== "object") {
-        return [];
+    if (data && typeof data.message === "string") {
+        return data.message;
     }
 
-    for (const key of possibleKeys) {
-        if (Array.isArray(data[key])) {
-            return data[key];
-        }
+    if (data && typeof data.error === "string") {
+        return data.error;
     }
 
-    // Handle common API response structures.
-    if (data.data) {
-        if (Array.isArray(data.data)) {
-            return data.data;
-        }
-
-        if (typeof data.data === "object") {
-            for (const key of possibleKeys) {
-                if (Array.isArray(data.data[key])) {
-                    return data.data[key];
-                }
-            }
-        }
-    }
-
-    return [];
+    return fallback;
 }
 
 
-// -------------------- 4. API REQUEST FUNCTION --------------------
+/* =========================================================
+   3. API REQUEST HELPER
+========================================================= */
 
 async function apiRequest(url, options = {}) {
     const token = getToken();
 
-    if (!token) {
-        throw new Error("Your session has expired. Please log in again.");
-    }
-
     const headers = {
-        Authorization: `Bearer ${token}`,
         ...(options.headers || {})
     };
 
-    if (options.body && !headers["Content-Type"]) {
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+
+    if (options.body !== undefined && !headers["Content-Type"]) {
         headers["Content-Type"] = "application/json";
     }
 
@@ -233,238 +156,279 @@ async function apiRequest(url, options = {}) {
             headers
         });
     } catch (error) {
+        console.error("API connection error:", error);
+
         throw new Error(
-            "Unable to connect to the backend. Make sure your server is running on port 5000."
+            "Cannot connect to the backend. Make sure your backend is running on port 5000."
         );
     }
 
-    const responseText = await response.text();
-    let data = {};
+    const contentType = response.headers.get("content-type") || "";
+    let data;
 
-    if (responseText) {
-        try {
-            data = JSON.parse(responseText);
-        } catch {
-            throw new Error(
-                `The server returned an invalid response (HTTP ${response.status}).`
-            );
-        }
+    if (contentType.includes("application/json")) {
+        data = await response.json().catch(() => null);
+    } else {
+        data = await response.text().catch(() => "");
     }
 
     if (response.status === 401) {
-        logoutStudent();
+        localStorage.removeItem("token");
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("user");
+        localStorage.removeItem("currentUser");
+        localStorage.removeItem("loggedInUser");
+
+        sessionStorage.removeItem("token");
+        sessionStorage.removeItem("authToken");
+        sessionStorage.removeItem("user");
+        sessionStorage.removeItem("currentUser");
+        sessionStorage.removeItem("loggedInUser");
+
+        window.location.href = "../login/index.html";
+
         throw new Error("Your session has expired. Please log in again.");
     }
 
     if (!response.ok) {
-        const message =
-            data.message ||
-            data.error ||
-            `Request failed with status ${response.status}.`;
-
-        throw new Error(message);
+        throw new Error(
+            getErrorMessage(
+                data,
+                `Request failed with status ${response.status}.`
+            )
+        );
     }
 
     return data;
 }
 
 
-// -------------------- 5. STUDENT PROFILE --------------------
+/* =========================================================
+   4. NORMALIZE API RESPONSES
+========================================================= */
 
-function getStudentFromStorage() {
-    const possibleKeys = [
-        "user",
-        "student",
-        "currentUser",
-        "loggedInUser"
-    ];
+function extractArray(response, possibleKeys = []) {
+    if (Array.isArray(response)) {
+        return response;
+    }
+
+    if (!response || typeof response !== "object") {
+        return [];
+    }
 
     for (const key of possibleKeys) {
-        const storedValue =
-            localStorage.getItem(key) ||
-            sessionStorage.getItem(key);
-
-        if (!storedValue) continue;
-
-        try {
-            const parsed = JSON.parse(storedValue);
-
-            if (parsed && typeof parsed === "object") {
-                return parsed.user || parsed.student || parsed;
-            }
-        } catch {
-            // Ignore values that are not JSON.
+        if (Array.isArray(response[key])) {
+            return response[key];
         }
     }
 
-    return null;
-}
+    if (response.data) {
+        if (Array.isArray(response.data)) {
+            return response.data;
+        }
 
-function updateStudentProfile() {
-    const student = getStudentFromStorage();
-
-    const name =
-        student?.name ||
-        student?.fullName ||
-        student?.username ||
-        "Student";
-
-    setText("student-name", name);
-
-    const avatar = getElement("avatar");
-
-    if (avatar) {
-        avatar.textContent = name
-            .split(/\s+/)
-            .filter(Boolean)
-            .map((part) => part.charAt(0))
-            .join("")
-            .slice(0, 2)
-            .toUpperCase() || "S";
-
-        avatar.setAttribute("aria-label", `${name}'s avatar`);
+        if (typeof response.data === "object") {
+            for (const key of possibleKeys) {
+                if (Array.isArray(response.data[key])) {
+                    return response.data[key];
+                }
+            }
+        }
     }
+
+    return [];
 }
 
+function getId(item) {
+    if (!item) return "";
 
-// -------------------- 6. EVENT DATA HELPERS --------------------
+    const value =
+        item._id ||
+        item.id ||
+        item.eventId ||
+        item.certificateId;
+
+    if (value && typeof value === "object") {
+        return value._id || value.id || "";
+    }
+
+    return value ? String(value) : "";
+}
 
 function getEventId(event) {
-    return getId(event?._id || event?.id || event?.eventId);
-}
-
-function getEventName(event) {
-    return event?.title || event?.name || "Untitled Event";
-}
-
-function getEventCategory(event) {
-    if (typeof event?.category === "string") {
-        return event.category;
-    }
-
-    return event?.category?.name || "Other";
-}
-
-function getEventClubName(event) {
-    if (typeof event?.club === "string") {
-        return "Club";
-    }
-
-    return event?.club?.name || event?.clubName || "Club not specified";
-}
-
-function getRegistrationEventId(registration) {
-    return getId(registration?.event || registration?.eventId);
+    return getId(event);
 }
 
 function getRegistrationEvent(registration) {
-    if (
-        registration?.event &&
-        typeof registration.event === "object"
-    ) {
-        return registration.event;
-    }
-
-    if (
-        registration?.eventId &&
-        typeof registration.eventId === "object"
-    ) {
-        return registration.eventId;
-    }
-
-    return null;
-}
-
-function isEventApproved(event) {
-    return event?.approvalStatus === "approved";
-}
-
-function isUpcomingScheduledEvent(event) {
-    const eventDate = new Date(event?.date);
-
-    if (Number.isNaN(eventDate.getTime())) {
-        return false;
-    }
-
-    const isUpcoming = eventDate.getTime() > Date.now();
-    const isScheduled =
-        !event.status || event.status === "scheduled";
+    if (!registration) return null;
 
     return (
-        isEventApproved(event) &&
-        isUpcoming &&
-        isScheduled
+        registration.event ||
+        registration.eventId ||
+        registration.eventDetails ||
+        null
     );
 }
 
-function getEventList(data) {
-    return extractList(data, ["events", "results", "items"]);
-}
+function getRegistrationEventId(registration) {
+    const event = getRegistrationEvent(registration);
 
-function getRegistrationList(data) {
-    return extractList(data, [
-        "registrations",
-        "results",
-        "items"
-    ]);
-}
-
-function getAttendanceList(data) {
-    return extractList(data, [
-        "attendance",
-        "attendances",
-        "records",
-        "results",
-        "items"
-    ]);
-}
-
-function getCertificateList(data) {
-    return extractList(data, [
-        "certificates",
-        "results",
-        "items"
-    ]);
-}
-
-
-// -------------------- 7. DASHBOARD STATISTICS --------------------
-
-function updateDashboardStatistics(
-    registrations,
-    attendance,
-    certificates
-) {
-    setText("registered-count", registrations.length);
-    setText("attendance-count", attendance.length);
-    setText("certificate-count", certificates.length);
-}
-
-
-// -------------------- 8. BROWSE EVENTS --------------------
-
-let allBrowseEvents = [];
-let registeredEventIds = new Set();
-
-async function loadBrowseEvents() {
-    showMessage("browse-events-message", "Loading events...");
-
-    const list = getElement("browse-events-list");
-
-    if (list) {
-        list.replaceChildren();
+    if (event && typeof event === "object") {
+        return getEventId(event);
     }
 
+    return event ? String(event) : "";
+}
+
+function getEventName(event) {
+    if (!event) return "Event";
+
+    if (typeof event === "string") {
+        return event;
+    }
+
+    return event.title || event.name || event.eventName || "Event";
+}
+
+function getEventCategory(event) {
+    if (!event) return "General";
+
+    if (typeof event.category === "object" && event.category !== null) {
+        return event.category.name || "General";
+    }
+
+    return event.category || "General";
+}
+
+function formatDate(value) {
+    if (!value) return "Date not available";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return "Date not available";
+    }
+
+    return date.toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+}
+
+function formatDateOnly(value) {
+    if (!value) return "Not available";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return "Not available";
+    }
+
+    return date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+    });
+}
+
+function normalizeStatus(value) {
+    return String(value || "pending")
+        .trim()
+        .toLowerCase()
+        .replace(/[\s-]+/g, "_");
+}
+
+function setCount(elementId, count) {
+    const element = getElement(elementId);
+
+    if (element) {
+        element.textContent = String(count);
+    }
+}
+
+
+/* =========================================================
+   5. STUDENT PROFILE
+========================================================= */
+
+function loadStudentProfile() {
+    const user = getLoggedInUser();
+
+    const studentNameElement = getElement("student-name");
+    const avatarElement = getElement("avatar");
+
+    if (!user) {
+        if (studentNameElement) {
+            studentNameElement.textContent = "Student";
+        }
+
+        if (avatarElement) {
+            avatarElement.textContent = "S";
+        }
+
+        return;
+    }
+
+    const name =
+        user.name ||
+        user.fullName ||
+        user.username ||
+        user.email ||
+        "Student";
+
+    if (studentNameElement) {
+        studentNameElement.textContent = name;
+    }
+
+    if (avatarElement) {
+        avatarElement.textContent = name.trim().charAt(0).toUpperCase() || "S";
+    }
+}
+
+
+/* =========================================================
+   6. DASHBOARD STATISTICS
+========================================================= */
+
+function updateDashboardStats(registrations, attendance, certificates) {
+    setCount("registered-count", registrations.length);
+    setCount("attendance-count", attendance.length);
+    setCount("certificate-count", certificates.length);
+}
+
+
+/* =========================================================
+   7. BROWSE EVENTS
+========================================================= */
+
+let allEvents = [];
+let allRegistrations = [];
+
+async function loadBrowseEvents() {
+    const container = getElement("browse-events-list");
+
+    if (!container) return;
+
+    showMessage("browse-events-message", "Loading events...");
+
     try {
-        const data = await apiRequest(API.events);
-        allBrowseEvents = getEventList(data);
+        const response = await apiRequest(API.events);
 
-        // Only show approved events to students.
-        const approvedEvents = allBrowseEvents.filter(isEventApproved);
+        allEvents = extractArray(response, [
+            "events",
+            "results",
+            "items"
+        ]);
 
-        renderBrowseEvents(approvedEvents);
-        clearMessage("browse-events-message");
+        renderBrowseEvents(allEvents);
     } catch (error) {
+        console.error("Could not load events:", error);
+
+        container.replaceChildren();
+
         showMessage(
             "browse-events-message",
             error.message || "Unable to load events.",
@@ -483,8 +447,9 @@ function renderBrowseEvents(events) {
     if (!events.length) {
         showMessage(
             "browse-events-message",
-            "No approved events found. Please check again later."
+            "No events found. Please check again later."
         );
+
         return;
     }
 
@@ -495,7 +460,12 @@ function renderBrowseEvents(events) {
 
         const card = createElement("article", "event-card");
 
-        addText(card, "h3", "event-title", getEventName(event));
+        addText(
+            card,
+            "h3",
+            "data-item-title",
+            getEventName(event)
+        );
 
         addText(
             card,
@@ -507,34 +477,31 @@ function renderBrowseEvents(events) {
         addText(
             card,
             "p",
-            "event-date",
-            `Date: ${formatDate(event.date)}`
+            "",
+            `Date: ${formatDate(event.date || event.eventDate)}`
         );
 
         addText(
             card,
             "p",
-            "event-venue",
-            `Venue: ${event.venue || "Not specified"}`
-        );
-
-        addText(
-            card,
-            "p",
-            "event-club",
-            `Club: ${getEventClubName(event)}`
+            "",
+            `Venue: ${event.venue || event.location || "Not announced"}`
         );
 
         if (event.description) {
-            addText(
-                card,
-                "p",
-                "event-description",
-                event.description
-            );
+            addText(card, "p", "event-description", event.description);
         }
 
-        // View Details button: opens the Day 38 event-details page.
+        const status = normalizeStatus(event.status);
+
+        if (status === "cancelled") {
+            addText(card, "span", "status cancelled", "Cancelled");
+        } else if (status === "completed") {
+            addText(card, "span", "status completed", "Completed");
+        }
+
+        const actions = createElement("div", "event-actions");
+
         if (eventId) {
             const detailsButton = createButton(
                 "View Details",
@@ -545,75 +512,90 @@ function renderBrowseEvents(events) {
                 }
             );
 
-            card.appendChild(detailsButton);
+            actions.appendChild(detailsButton);
+
+            const alreadyRegistered = allRegistrations.some((registration) => {
+                return (
+                    getRegistrationEventId(registration) === eventId &&
+                    !["cancelled", "canceled", "rejected"].includes(
+                        normalizeStatus(registration.status)
+                    )
+                );
+            });
+
+            const eventIsUnavailable = [
+                "cancelled",
+                "completed"
+            ].includes(status);
+
+            if (alreadyRegistered) {
+                const registeredButton = createButton(
+                    "Already Registered",
+                    "secondary-button",
+                    () => {
+                        window.location.href = "#registered-events-section";
+                    }
+                );
+
+                registeredButton.disabled = true;
+                actions.appendChild(registeredButton);
+            } else if (!eventIsUnavailable) {
+                const registerButton = createButton(
+                    "Register",
+                    "register-button",
+                    async () => {
+                        await registerForEvent(eventId, registerButton);
+                    }
+                );
+
+                actions.appendChild(registerButton);
+            }
         }
 
-        // Display registration status and the Register button.
-        if (registeredEventIds.has(eventId)) {
-            const registeredBadge = addText(
-                card,
-                "span",
-                "status-badge",
-                "Already Registered"
-            );
-
-            registeredBadge.setAttribute(
-                "aria-label",
-                "Already registered"
-            );
-        } else if (eventId && isUpcomingScheduledEvent(event)) {
-            const registerButton = createButton(
-                "Register",
-                "primary-button",
-                () => registerForEvent(eventId, registerButton)
-            );
-
-            card.appendChild(registerButton);
-        } else {
-            addText(
-                card,
-                "span",
-                "status-badge",
-                event.status === "cancelled"
-                    ? "Cancelled"
-                    : "Registration unavailable"
-            );
-        }
-
+        card.appendChild(actions);
         container.appendChild(card);
     });
 }
 
-function filterBrowseEvents() {
+
+/* =========================================================
+   8. SEARCH AND CATEGORY FILTER
+========================================================= */
+
+function filterEvents() {
     const searchInput = getElement("event-search");
-    const categorySelect = getElement("event-category");
+    const categoryInput = getElement("event-category");
 
-    const searchTerm = (searchInput?.value || "")
-        .trim()
-        .toLowerCase();
+    const searchText = searchInput
+        ? searchInput.value.trim().toLowerCase()
+        : "";
 
-    const selectedCategory = categorySelect?.value || "";
+    const selectedCategory = categoryInput
+        ? categoryInput.value.trim().toLowerCase()
+        : "";
 
-    const approvedEvents = allBrowseEvents.filter(isEventApproved);
-
-    const filteredEvents = approvedEvents.filter((event) => {
+    const filteredEvents = allEvents.filter((event) => {
         const title = getEventName(event).toLowerCase();
-        const description = (event.description || "").toLowerCase();
-        const venue = (event.venue || "").toLowerCase();
-        const club = getEventClubName(event).toLowerCase();
-        const category = getEventCategory(event);
+
+        const description = String(event.description || "").toLowerCase();
+
+        const venue = String(
+            event.venue || event.location || ""
+        ).toLowerCase();
+
+        const category = String(getEventCategory(event)).toLowerCase();
 
         const matchesSearch =
-            !searchTerm ||
-            title.includes(searchTerm) ||
-            description.includes(searchTerm) ||
-            venue.includes(searchTerm) ||
-            club.includes(searchTerm);
+            !searchText ||
+            title.includes(searchText) ||
+            description.includes(searchText) ||
+            venue.includes(searchText) ||
+            category.includes(searchText);
 
         const matchesCategory =
             !selectedCategory ||
             selectedCategory === "all" ||
-            category.toLowerCase() === selectedCategory.toLowerCase();
+            category === selectedCategory;
 
         return matchesSearch && matchesCategory;
     });
@@ -621,104 +603,98 @@ function filterBrowseEvents() {
     renderBrowseEvents(filteredEvents);
 }
 
-function initializeEventBrowser() {
+function setupEventFilters() {
     const searchButton = getElement("search-events-button");
     const searchInput = getElement("event-search");
-    const categorySelect = getElement("event-category");
+    const categoryInput = getElement("event-category");
 
     if (searchButton) {
-        searchButton.addEventListener("click", filterBrowseEvents);
+        searchButton.addEventListener("click", filterEvents);
     }
 
     if (searchInput) {
         searchInput.addEventListener("keydown", (event) => {
             if (event.key === "Enter") {
-                filterBrowseEvents();
+                filterEvents();
             }
         });
     }
 
-    if (categorySelect) {
-        categorySelect.addEventListener("change", filterBrowseEvents);
+    if (categoryInput) {
+        categoryInput.addEventListener("change", filterEvents);
     }
 }
 
 
-// -------------------- 9. REGISTER FOR AN EVENT --------------------
+/* =========================================================
+   9. REGISTER FOR AN EVENT
+========================================================= */
 
-async function registerForEvent(eventId, button = null) {
-    if (!eventId) {
-        alert("Invalid event ID.");
+async function registerForEvent(eventId, button) {
+    if (!getToken()) {
+        setPageMessage("Please log in to register for an event.", "error");
         return;
     }
 
-    if (registeredEventIds.has(eventId)) {
-        alert("You are already registered for this event.");
-        return;
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Registering...";
     }
-
-    const event = allBrowseEvents.find(
-        (item) => getEventId(item) === eventId
-    );
-
-    if (event && !isUpcomingScheduledEvent(event)) {
-        alert("Registration is not available for this event.");
-        return;
-    }
-
-    setButtonLoading(button, true, "Registering...");
 
     try {
         await apiRequest(API.registerForEvent(eventId), {
             method: "POST"
         });
 
-        alert("You have successfully registered for the event.");
+        clearPageMessage();
 
-        // Refresh the registration list and dashboard counts.
+        setPageMessage("Registration successful!", "success");
+
         await loadRegistrations();
         await loadBrowseEvents();
-        await loadAttendance();
-        await loadCertificates();
     } catch (error) {
-        alert(error.message || "Registration failed.");
-    } finally {
-        setButtonLoading(button, false);
+        console.error("Registration failed:", error);
+
+        setPageMessage(
+            error.message || "Could not register for this event.",
+            "error"
+        );
+
+        if (button) {
+            button.disabled = false;
+            button.textContent = "Register";
+        }
     }
 }
 
 
-// -------------------- 10. MY REGISTRATIONS --------------------
+/* =========================================================
+   10. MY REGISTRATIONS
+========================================================= */
 
 async function loadRegistrations() {
-    showMessage("registrations-message", "Loading registrations...");
-
-    const container = getElement("events-list");
-
-    if (container) {
-        container.replaceChildren();
-    }
-
     try {
-        const data = await apiRequest(API.myRegistrations);
-        const registrations = getRegistrationList(data);
+        const response = await apiRequest(API.myRegistrations);
 
-        registeredEventIds = new Set(
-            registrations
-                .map(getRegistrationEventId)
-                .filter(Boolean)
-        );
+        allRegistrations = extractArray(response, [
+            "registrations",
+            "results",
+            "items"
+        ]);
 
-        renderRegistrations(registrations);
+        renderRegistrations(allRegistrations);
 
-        // Keep the registration count accurate.
-        setText("registered-count", registrations.length);
+        return allRegistrations;
     } catch (error) {
+        console.error("Could not load registrations:", error);
+
         showMessage(
             "registrations-message",
-            error.message || "Unable to load registrations.",
+            error.message || "Unable to load your registrations.",
             "error"
         );
+
+        return [];
     }
 }
 
@@ -729,122 +705,92 @@ function renderRegistrations(registrations) {
 
     container.replaceChildren();
 
-    if (!registrations || registrations.length === 0) {
+    if (!registrations.length) {
         showMessage(
             "registrations-message",
             "You have not registered for any events yet."
         );
+
         return;
     }
 
     clearMessage("registrations-message");
 
     registrations.forEach((registration) => {
-        // Get the event associated with this registration.
         const event = getRegistrationEvent(registration);
 
-        const eventId =
-            getRegistrationEventId(registration) ||
-            getEventId(event);
+        const eventId = getRegistrationEventId(registration);
 
         const card = createElement("article", "data-item");
 
-        // Event title.
         addText(
             card,
             "h3",
             "data-item-title",
-            getEventName(event || {})
+            getEventName(event)
         );
 
-        // Event date.
-        addText(
-            card,
-            "p",
-            "",
-            `Date: ${formatDate(event?.date)}`
-        );
-
-        // Event venue.
-        addText(
-            card,
-            "p",
-            "",
-            `Venue: ${event?.venue || "Not specified"}`
-        );
-
-        // Event category.
-        if (event) {
+        if (event && typeof event === "object") {
             addText(
                 card,
                 "p",
                 "",
-                `Category: ${getEventCategory(event)}`
+                `Date: ${formatDate(event.date || event.eventDate)}`
+            );
+
+            addText(
+                card,
+                "p",
+                "",
+                `Venue: ${event.venue || event.location || "Not announced"}`
             );
         }
 
-        // Normalize registration status for consistent display.
         const rawStatus =
             registration.status ||
             registration.registrationStatus ||
             "registered";
 
-        const normalizedStatus = String(rawStatus)
-            .trim()
-            .toLowerCase()
-            .replace(/[\s-]+/g, "_");
+        const normalizedStatus = normalizeStatus(rawStatus);
 
-        // Map backend statuses to readable labels and CSS classes.
-        const statusDetails = {
-            registered: {
-                label: "Registered",
-                className: "status-registered"
-            },
-            confirmed: {
-                label: "Confirmed",
-                className: "status-confirmed"
-            },
-            cancelled: {
-                label: "Cancelled",
-                className: "status-cancelled"
-            },
-            attended: {
-                label: "Attended",
-                className: "status-attended"
-            },
-            completed: {
-                label: "Completed",
-                className: "status-completed"
-            },
-            pending: {
-                label: "Pending",
-                className: "status-pending"
-            }
+        const statusLabels = {
+            registered: "Registered",
+            confirmed: "Confirmed",
+            cancelled: "Cancelled",
+            canceled: "Cancelled",
+            attended: "Attended",
+            completed: "Completed",
+            pending: "Pending",
+            rejected: "Rejected"
         };
 
-        const statusInfo = statusDetails[normalizedStatus] || {
-            label: String(rawStatus)
-                .replace(/[_-]+/g, " ")
-                .replace(/\b\w/g, (character) =>
-                    character.toUpperCase()
-                ),
-            className: "status-default"
+        const statusClasses = {
+            registered: "registered",
+            confirmed: "confirmed",
+            cancelled: "cancelled",
+            canceled: "cancelled",
+            attended: "attended",
+            completed: "completed",
+            pending: "pending",
+            rejected: "rejected"
         };
 
-        // Display the registration status badge.
-        const statusBadge = addText(
+        const statusLabel =
+            statusLabels[normalizedStatus] ||
+            String(rawStatus);
+
+        const statusClass =
+            statusClasses[normalizedStatus] || "pending";
+
+        addText(
             card,
             "span",
-            `status-badge ${statusInfo.className}`,
-            statusInfo.label
+            `status ${statusClass}`,
+            statusLabel
         );
 
-        statusBadge.setAttribute(
-            "aria-label",
-            `Registration status: ${statusInfo.label}`
-        );
+        const actions = createElement("div", "event-actions");
 
-        // View Details button.
         if (eventId) {
             const detailsButton = createButton(
                 "View Details",
@@ -855,95 +801,140 @@ function renderRegistrations(registrations) {
                 }
             );
 
-            card.appendChild(detailsButton);
+            actions.appendChild(detailsButton);
         }
 
-        // Show cancellation only when the registration and event
-        // are eligible for cancellation.
-        const registrationCannotBeCancelled = [
+        const cannotCancel = [
             "cancelled",
+            "canceled",
             "attended",
-            "completed"
+            "completed",
+            "rejected"
         ].includes(normalizedStatus);
 
-        const eventCannotBeCancelled =
-            event?.status === "cancelled" ||
-            event?.status === "completed";
+        const eventStatus = normalizeStatus(
+            event && typeof event === "object" ? event.status : ""
+        );
 
-        const canCancel =
-            Boolean(eventId) &&
-            !registrationCannotBeCancelled &&
-            !eventCannotBeCancelled;
+        const eventIsClosed = [
+            "cancelled",
+            "completed"
+        ].includes(eventStatus);
 
-        if (canCancel) {
+        if (eventId && !cannotCancel && !eventIsClosed) {
             const cancelButton = createButton(
                 "Cancel Registration",
                 "cancel-button",
-                () => cancelRegistration(eventId, cancelButton)
+                async () => {
+                    const confirmed = window.confirm(
+                        `Are you sure you want to cancel your registration for "${getEventName(event)}"?`
+                    );
+
+                    if (confirmed) {
+                        await cancelRegistration(eventId, cancelButton);
+                    }
+                }
             );
 
-            card.appendChild(cancelButton);
+            actions.appendChild(cancelButton);
         }
 
-        // Add the completed card to the registrations section.
+        card.appendChild(actions);
         container.appendChild(card);
     });
 }
 
 
-// -------------------- 11. MY ATTENDANCE --------------------
+/* =========================================================
+   11. CANCEL REGISTRATION
+========================================================= */
 
-async function loadAttendance() {
-    showMessage("attendance-message", "Loading attendance...");
-
-    const container = getElement("attendance-list");
-
-    if (container) {
-        container.replaceChildren();
+async function cancelRegistration(eventId, button) {
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Cancelling...";
     }
 
     try {
-        const data = await apiRequest(API.myAttendance);
-        const attendance = getAttendanceList(data);
+        await apiRequest(API.cancelRegistration(eventId), {
+            method: "DELETE"
+        });
+
+        setPageMessage("Registration cancelled successfully.", "success");
+
+        await loadRegistrations();
+        await loadBrowseEvents();
+    } catch (error) {
+        console.error("Could not cancel registration:", error);
+
+        setPageMessage(
+            error.message || "Unable to cancel your registration.",
+            "error"
+        );
+
+        if (button) {
+            button.disabled = false;
+            button.textContent = "Cancel Registration";
+        }
+    }
+}
+
+
+/* =========================================================
+   12. MY ATTENDANCE
+========================================================= */
+
+async function loadAttendance() {
+    try {
+        const response = await apiRequest(API.myAttendance);
+
+        const attendance = extractArray(response, [
+            "attendance",
+            "records",
+            "results",
+            "items"
+        ]);
 
         renderAttendance(attendance);
-        setText("attendance-count", attendance.length);
+
+        return attendance;
     } catch (error) {
+        console.error("Could not load attendance:", error);
+
         showMessage(
             "attendance-message",
             error.message || "Unable to load attendance.",
             "error"
         );
+
+        return [];
     }
 }
 
-function renderAttendance(records) {
+function renderAttendance(attendance) {
     const container = getElement("attendance-list");
 
     if (!container) return;
 
     container.replaceChildren();
 
-    if (!records.length) {
+    if (!attendance.length) {
         showMessage(
             "attendance-message",
-            "No attendance records found yet."
+            "No attendance records are available yet."
         );
+
         return;
     }
 
     clearMessage("attendance-message");
 
-    records.forEach((record) => {
+    attendance.forEach((record) => {
         const event =
-            getRegistrationEvent(record) ||
-            (record.event && typeof record.event === "object"
-                ? record.event
-                : null);
-
-        const eventId =
-            getId(record.event || record.eventId) ||
-            getEventId(event);
+            record.event ||
+            record.eventId ||
+            record.eventDetails ||
+            null;
 
         const card = createElement("article", "data-item");
 
@@ -951,39 +942,52 @@ function renderAttendance(records) {
             card,
             "h3",
             "data-item-title",
-            getEventName(event || {})
+            getEventName(event)
         );
+
+        const attendanceDate =
+            record.checkedInAt ||
+            record.attendedAt ||
+            record.createdAt ||
+            record.date;
 
         addText(
             card,
             "p",
             "",
-            `Attendance date: ${formatDate(
-                record.checkedInAt ||
-                record.attendanceDate ||
-                record.createdAt ||
-                event?.date
-            )}`
+            `Attendance date: ${formatDate(attendanceDate)}`
         );
+
+        const status =
+            record.status ||
+            record.attendanceStatus ||
+            "Present";
 
         addText(
             card,
             "span",
-            "status",
-            record.status || "Present"
+            `status ${normalizeStatus(status)}`,
+            String(status)
         );
 
+        const eventId =
+            event && typeof event === "object"
+                ? getEventId(event)
+                : event
+                    ? String(event)
+                    : "";
+
         if (eventId) {
-            card.appendChild(
-                createButton(
-                    "View Event",
-                    "secondary-button",
-                    () => {
-                        window.location.href =
-                            `../event-details/index.html?id=${encodeURIComponent(eventId)}`;
-                    }
-                )
+            const detailsButton = createButton(
+                "View Event",
+                "secondary-button",
+                () => {
+                    window.location.href =
+                        `../event-details/index.html?id=${encodeURIComponent(eventId)}`;
+                }
             );
+
+            card.appendChild(detailsButton);
         }
 
         container.appendChild(card);
@@ -991,29 +995,33 @@ function renderAttendance(records) {
 }
 
 
-// -------------------- 12. MY CERTIFICATES --------------------
+/* =========================================================
+   13. MY CERTIFICATES
+========================================================= */
 
 async function loadCertificates() {
-    showMessage("certificates-message", "Loading certificates...");
-
-    const container = getElement("certificates-list");
-
-    if (container) {
-        container.replaceChildren();
-    }
-
     try {
-        const data = await apiRequest(API.myCertificates);
-        const certificates = getCertificateList(data);
+        const response = await apiRequest(API.myCertificates);
+
+        const certificates = extractArray(response, [
+            "certificates",
+            "results",
+            "items"
+        ]);
 
         renderCertificates(certificates);
-        setText("certificate-count", certificates.length);
+
+        return certificates;
     } catch (error) {
+        console.error("Could not load certificates:", error);
+
         showMessage(
             "certificates-message",
-            error.message || "Unable to load certificates.",
+            error.message || "Unable to load your certificates.",
             "error"
         );
+
+        return [];
     }
 }
 
@@ -1029,6 +1037,7 @@ function renderCertificates(certificates) {
             "certificates-message",
             "No certificates are available yet."
         );
+
         return;
     }
 
@@ -1037,31 +1046,43 @@ function renderCertificates(certificates) {
     certificates.forEach((certificate) => {
         const card = createElement("article", "data-item");
 
+        const event =
+            certificate.event ||
+            certificate.eventId ||
+            certificate.eventDetails ||
+            null;
+
         addText(
             card,
             "h3",
             "data-item-title",
             certificate.title ||
-            certificate.event?.title ||
+            (event && typeof event === "object" ? getEventName(event) : "") ||
             certificate.eventName ||
             "Event Certificate"
         );
+
+        const issuedDate =
+            certificate.issuedAt ||
+            certificate.createdAt ||
+            certificate.issueDate;
 
         addText(
             card,
             "p",
             "",
-            `Issued: ${formatDateOnly(
-                certificate.issuedAt ||
-                certificate.createdAt ||
-                certificate.issueDate
-            )}`
+            `Issued: ${formatDateOnly(issuedDate)}`
         );
 
         const certificateId =
             certificate._id ||
             certificate.id ||
             certificate.certificateId;
+
+        /*
+         * VERIFY CERTIFICATE BUTTON
+         * Opens the certificate verification page.
+         */
 
         if (certificateId) {
             const verifyButton = createButton(
@@ -1075,6 +1096,10 @@ function renderCertificates(certificates) {
 
             card.appendChild(verifyButton);
         }
+
+        /*
+         * OPEN / DOWNLOAD CERTIFICATE
+         */
 
         const certificateUrl =
             certificate.certificateUrl ||
@@ -1100,48 +1125,72 @@ function renderCertificates(certificates) {
 }
 
 
-// -------------------- 13. LOGOUT BUTTON --------------------
+/* =========================================================
+   14. LOGOUT
+========================================================= */
 
-function initializeLogout() {
+function logout() {
+    const confirmed = window.confirm("Are you sure you want to log out?");
+
+    if (!confirmed) return;
+
+    const storageKeys = [
+        "token",
+        "authToken",
+        "user",
+        "currentUser",
+        "loggedInUser"
+    ];
+
+    storageKeys.forEach((key) => {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+    });
+
+    window.location.href = "../login/index.html";
+}
+
+function setupLogout() {
     const logoutButton = getElement("logout-button");
 
     if (logoutButton) {
-        logoutButton.addEventListener("click", logoutStudent);
+        logoutButton.addEventListener("click", logout);
     }
 }
 
 
-// -------------------- 14. LOAD THE DASHBOARD --------------------
+/* =========================================================
+   15. LOAD DASHBOARD
+========================================================= */
 
 async function loadDashboard() {
-    const token = getToken();
+    loadStudentProfile();
+    setupEventFilters();
+    setupLogout();
 
-    if (!token) {
-        showMessage(
-            "page-message",
-            "Please log in to access your student dashboard.",
+    const currentYearElement = getElement("current-year");
+
+    if (currentYearElement) {
+        currentYearElement.textContent = new Date().getFullYear();
+    }
+
+    if (!getToken()) {
+        setPageMessage(
+            "You are not logged in. Please log in to view your dashboard.",
             "error"
         );
-
-        // Redirect to login after displaying the message.
-        window.setTimeout(() => {
-            logoutStudent();
-        }, 1200);
 
         return;
     }
 
-    showMessage("page-message", "Loading your dashboard...");
+    clearPageMessage();
 
-    updateStudentProfile();
+    /*
+     * Load each dashboard section independently.
+     * A failure in one section will not prevent the others
+     * from loading.
+     */
 
-    const currentYear = getElement("current-year");
-
-    if (currentYear) {
-        currentYear.textContent = new Date().getFullYear();
-    }
-
-    // Load independent dashboard sections together.
     const results = await Promise.allSettled([
         loadRegistrations(),
         loadAttendance(),
@@ -1149,25 +1198,37 @@ async function loadDashboard() {
         loadBrowseEvents()
     ]);
 
-    // Log errors for debugging without stopping other sections.
-    results.forEach((result, index) => {
-        if (result.status === "rejected") {
-            console.error(
-                `Dashboard section ${index + 1} failed:`,
-                result.reason
-            );
-        }
-    });
+    const registrationsResult = results[0];
+    const attendanceResult = results[1];
+    const certificatesResult = results[2];
 
-    clearMessage("page-message");
+    const registrations =
+        registrationsResult.status === "fulfilled"
+            ? registrationsResult.value
+            : [];
+
+    const attendance =
+        attendanceResult.status === "fulfilled"
+            ? attendanceResult.value
+            : [];
+
+    const certificates =
+        certificatesResult.status === "fulfilled"
+            ? certificatesResult.value
+            : [];
+
+    updateDashboardStats(
+        registrations,
+        attendance,
+        certificates
+    );
 }
 
 
-// -------------------- 15. INITIALIZE WHEN HTML IS READY --------------------
+/* =========================================================
+   16. START APPLICATION
+========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
-    initializeEventBrowser();
-    initializeLogout();
-    updateStudentProfile();
     loadDashboard();
 });
