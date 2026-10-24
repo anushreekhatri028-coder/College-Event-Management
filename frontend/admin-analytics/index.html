@@ -1,0 +1,223 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Analytics | College Event Management</title>
+
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <a href="#" class="brand">
+                <span class="brand-icon">C</span>
+                <span>
+                    <strong>CampusHub</strong>
+                    <small>Event Management</small>
+                </span>
+            </a>
+
+            <div class="sidebar-label">ADMINISTRATION</div>
+
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-link active">
+                    <span class="nav-icon">▦</span>
+                    Analytics Dashboard
+                </a>
+
+                <a href="../student-dashboard/index.html" class="nav-link">
+                    <span class="nav-icon">◉</span>
+                    Student Dashboard
+                </a>
+            </nav>
+
+            <div class="sidebar-bottom">
+                <div class="admin-profile">
+                    <div class="admin-avatar" id="admin-avatar">A</div>
+                    <div class="admin-info">
+                        <strong id="admin-name">Administrator</strong>
+                        <small id="admin-role">Admin</small>
+                    </div>
+                </div>
+
+                <button id="logout-button" class="logout-button" type="button">
+                    ↪ Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="main-content">
+
+            <header class="topbar">
+                <div>
+                    <p class="eyebrow">OVERVIEW</p>
+                    <h1>Analytics Dashboard</h1>
+                    <p class="page-subtitle">
+                        Monitor college events, registrations and attendance.
+                    </p>
+                </div>
+
+                <button id="refresh-button" class="button button-secondary"
+                        type="button">
+                    ↻ Refresh Data
+                </button>
+            </header>
+
+            <div id="page-message" class="message" role="status" hidden></div>
+
+            <!-- Summary cards -->
+            <section class="stats-grid" aria-label="Event statistics">
+
+                <article class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-label">Total Events</span>
+                        <span class="stat-icon purple">▦</span>
+                    </div>
+                    <h2 id="total-events">—</h2>
+                    <p class="stat-description">Events in the system</p>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-label">Pending Approvals</span>
+                        <span class="stat-icon orange">◷</span>
+                    </div>
+                    <h2 id="pending-events">—</h2>
+                    <p class="stat-description">Events awaiting review</p>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-label">Registrations</span>
+                        <span class="stat-icon blue">♙</span>
+                    </div>
+                    <h2 id="total-registrations">—</h2>
+                    <p class="stat-description">Event registration records</p>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-label">Attendance</span>
+                        <span class="stat-icon green">✓</span>
+                    </div>
+                    <h2 id="total-attendance">—</h2>
+                    <p class="stat-description">Recorded attendance</p>
+                </article>
+
+            </section>
+
+            <!-- Charts -->
+            <section class="charts-grid">
+
+                <article class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Event Performance</h2>
+                            <p>Registration and attendance by event</p>
+                        </div>
+                    </div>
+
+                    <div id="performance-chart" class="chart-area">
+                        <p class="empty-state">Loading event performance...</p>
+                    </div>
+
+                    <div class="chart-legend">
+                        <span><i class="legend-dot registrations-dot"></i> Registrations</span>
+                        <span><i class="legend-dot attendance-dot"></i> Attendance</span>
+                    </div>
+                </article>
+
+                <article class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Event Overview</h2>
+                            <p>Current event approval statuses</p>
+                        </div>
+                    </div>
+
+                    <div id="status-chart" class="status-chart">
+                        <p class="empty-state">Loading event statuses...</p>
+                    </div>
+                </article>
+
+            </section>
+
+            <!-- Popular events -->
+            <section class="panel table-panel">
+                <div class="panel-header">
+                    <div>
+                        <h2>Popular Events</h2>
+                        <p>Events ranked by registration activity when available</p>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Event</th>
+                                <th>Category</th>
+                                <th>Registrations</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="popular-events-body">
+                            <tr>
+                                <td colspan="4" class="empty-state">
+                                    Loading popular events...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Pending approvals -->
+            <section class="panel table-panel">
+                <div class="panel-header">
+                    <div>
+                        <h2>Pending Event Approvals</h2>
+                        <p>Events awaiting an administrator's review</p>
+                    </div>
+                    <span id="pending-count" class="count-badge">0</span>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Event</th>
+                                <th>Category</th>
+                                <th>Date</th>
+                                <th>Venue</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pending-events-body">
+                            <tr>
+                                <td colspan="5" class="empty-state">
+                                    Loading pending events...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <footer class="footer">
+                <span>CampusHub · Admin Analytics</span>
+                <span>© <span id="current-year"></span></span>
+            </footer>
+
+        </main>
+    </div>
+</body>
+</html>
