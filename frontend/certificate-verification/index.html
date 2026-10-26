@@ -1,23 +1,33 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="description"
+        content="Verify the authenticity of a CampusConnect college event certificate."
+    >
 
-    <title>Certificate Verification | College Events</title>
+    <title>Certificate Verification | CampusConnect</title>
 
     <link rel="stylesheet" href="style.css">
     <script src="script.js" defer></script>
 </head>
+
 <body>
     <header class="verification-header">
         <div class="header-content">
             <a href="../student-dashboard/index.html" class="brand">
-                College Events
+                <span class="brand-logo" aria-hidden="true">C</span>
+                <span>CampusConnect</span>
             </a>
 
-            <a href="../student-dashboard/index.html" class="back-link">
-                Back to Dashboard
+            <a
+                href="../student-dashboard/index.html"
+                class="back-link"
+            >
+                &larr; Back to Dashboard
             </a>
         </div>
     </header>
@@ -33,17 +43,26 @@
                 college event.
             </p>
 
-            <div id="verification-message"
-                 class="message"
-                 role="status"
-                 aria-live="polite">
+            <div
+                id="verification-message"
+                class="message info"
+                role="status"
+                aria-live="polite"
+            >
                 Reading certificate details...
             </div>
 
-            <section id="certificate-result"
-                     class="certificate-result"
-                     hidden>
-                <div id="result-icon" class="result-icon"></div>
+            <section
+                id="certificate-result"
+                class="certificate-result"
+                aria-labelledby="result-title"
+                hidden
+            >
+                <div
+                    id="result-icon"
+                    class="result-icon"
+                    aria-hidden="true"
+                ></div>
 
                 <h2 id="result-title">Verification Result</h2>
 
@@ -77,19 +96,31 @@
                 </div>
             </section>
 
-            <button id="retry-button" type="button" hidden>
-                Try Again
-            </button>
+            <div class="verification-actions">
+                <button
+                    id="retry-button"
+                    class="retry-button"
+                    type="button"
+                    hidden
+                >
+                    Try Again
+                </button>
 
-            <a class="dashboard-button"
-               href="../student-dashboard/index.html">
-                Return to Dashboard
-            </a>
+                <a
+                    class="dashboard-button"
+                    href="../student-dashboard/index.html"
+                >
+                    Return to Dashboard
+                </a>
+            </div>
         </section>
     </main>
 
     <footer class="verification-footer">
-        <p>College Event Management System</p>
+        <p>
+            &copy; <span id="current-year"></span>
+            CampusConnect | College Event Management System
+        </p>
     </footer>
 </body>
 </html>

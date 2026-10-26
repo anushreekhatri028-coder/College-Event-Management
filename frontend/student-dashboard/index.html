@@ -1,4 +1,4 @@
-```html
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,22 +7,27 @@
 
     <meta
         name="description"
-        content="Student dashboard for the College Event Management System"
+        content="CampusConnect student dashboard for browsing college events, managing registrations, checking attendance, and downloading certificates."
     >
+
+    <meta name="theme-color" content="#4f46e5">
 
     <title>Student Dashboard | CampusConnect</title>
 
-    <link rel="stylesheet" href="style.css">
+    <!-- Student dashboard stylesheet -->
+    <link rel="stylesheet" href="./style.css">
+
+    <!-- Load JavaScript after the HTML has been parsed -->
+    <script src="./script.js" defer></script>
 </head>
 
 <body>
-
     <!-- ==================== HEADER ==================== -->
     <header class="dashboard-header">
         <div class="header-container">
 
-            <a href="#dashboard-home" class="brand">
-                <div class="brand-logo">C</div>
+            <a href="#dashboard-home" class="brand" aria-label="CampusConnect home">
+                <div class="brand-logo" aria-hidden="true">C</div>
 
                 <div class="brand-text">
                     <h1>CampusConnect</h1>
@@ -30,12 +35,45 @@
                 </div>
             </a>
 
-            <nav class="main-navigation" aria-label="Main navigation">
-                <a href="#dashboard-home">Dashboard</a>
-                <a href="#browse-events-section">Browse Events</a>
-                <a href="#registered-events-section">My Registrations</a>
-                <a href="#attendance-section">Attendance</a>
-                <a href="#certificates-section">Certificates</a>
+            <!-- Mobile navigation toggle -->
+            <button
+                type="button"
+                id="mobile-menu-button"
+                class="mobile-menu-button"
+                aria-label="Toggle navigation menu"
+                aria-expanded="false"
+                aria-controls="main-navigation"
+            >
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+
+            <!-- Main navigation -->
+            <nav
+                id="main-navigation"
+                class="main-navigation"
+                aria-label="Main navigation"
+            >
+                <a href="#dashboard-home" class="nav-link active">
+                    Dashboard
+                </a>
+
+                <a href="#browse-events-section" class="nav-link">
+                    Browse Events
+                </a>
+
+                <a href="#registered-events-section" class="nav-link">
+                    My Registrations
+                </a>
+
+                <a href="#attendance-section" class="nav-link">
+                    Attendance
+                </a>
+
+                <a href="#certificates-section" class="nav-link">
+                    Certificates
+                </a>
             </nav>
 
             <button
@@ -43,47 +81,50 @@
                 id="logout-button"
                 class="logout-button"
             >
+                <span aria-hidden="true">↪</span>
                 Logout
             </button>
 
         </div>
     </header>
 
-
     <!-- ==================== MAIN CONTENT ==================== -->
     <main class="dashboard-main">
 
+        <!-- Global notification area -->
         <div
             id="page-message"
             class="page-message"
             role="status"
             aria-live="polite"
+            hidden
         ></div>
 
-
         <!-- ==================== WELCOME SECTION ==================== -->
-        <section id="dashboard-home" class="welcome-section">
-
+        <section
+            id="dashboard-home"
+            class="welcome-section"
+            aria-labelledby="welcome-heading"
+        >
             <div class="welcome-content">
+
                 <p class="section-eyebrow">STUDENT PORTAL</p>
 
-                <h2>
+                <h2 id="welcome-heading">
                     Welcome back,
                     <span id="student-name">Student</span>!
                 </h2>
 
-                <p>
-                    Discover upcoming college events, manage your
-                    registrations, track your attendance, and access
-                    your certificates from one place.
+                <p class="welcome-description">
+                    Discover upcoming college events, manage your registrations,
+                    track your attendance, and access your certificates from one place.
                 </p>
 
-                <a
-                    href="#browse-events-section"
-                    class="primary-button"
-                >
+                <a href="#browse-events-section" class="primary-button">
                     Explore Events
+                    <span aria-hidden="true">→</span>
                 </a>
+
             </div>
 
             <div
@@ -93,9 +134,7 @@
             >
                 S
             </div>
-
         </section>
-
 
         <!-- ==================== STATISTICS ==================== -->
         <section
@@ -104,54 +143,92 @@
         >
 
             <article class="stat-card">
+                <div class="stat-icon event-icon" aria-hidden="true">
+                    ▦
+                </div>
+
                 <p>Registered Events</p>
-                <h2 id="registered-count">0</h2>
+
+                <h2 id="registered-count">—</h2>
+
                 <span>Your event registrations</span>
             </article>
 
             <article class="stat-card">
+                <div class="stat-icon attendance-icon" aria-hidden="true">
+                    ✓
+                </div>
+
                 <p>Attendance Records</p>
-                <h2 id="attendance-count">0</h2>
+
+                <h2 id="attendance-count">—</h2>
+
                 <span>Events you have attended</span>
             </article>
 
             <article class="stat-card">
+                <div class="stat-icon certificate-icon" aria-hidden="true">
+                    ◇
+                </div>
+
                 <p>Certificates</p>
-                <h2 id="certificate-count">0</h2>
+
+                <h2 id="certificate-count">—</h2>
+
                 <span>Your available certificates</span>
             </article>
 
         </section>
 
-
         <!-- ==================== BROWSE EVENTS ==================== -->
         <section
             id="browse-events-section"
             class="content-section"
+            aria-labelledby="browse-events-heading"
         >
 
             <div class="section-heading">
                 <div>
                     <p class="section-eyebrow">DISCOVER</p>
-                    <h2>Browse Upcoming Events</h2>
+
+                    <h2 id="browse-events-heading">
+                        Browse Upcoming Events
+                    </h2>
+
                     <p>
-                        Find college events and register for the ones
-                        that interest you.
+                        Find college events and register for the ones that interest you.
                     </p>
                 </div>
+
+                <button
+                    type="button"
+                    id="refresh-events-button"
+                    class="secondary-button"
+                >
+                    <span aria-hidden="true">↻</span>
+                    Refresh
+                </button>
             </div>
 
+            <!-- Event search and category filters -->
             <div class="event-filters">
 
-                <input
-                    type="search"
-                    id="event-search"
-                    placeholder="Search by event, club, venue..."
-                    aria-label="Search events"
-                >
+                <label class="search-field">
+                    <span aria-hidden="true">⌕</span>
+
+                    <input
+                        type="search"
+                        id="event-search"
+                        name="event-search"
+                        placeholder="Search by event, club, or venue..."
+                        aria-label="Search events by title, club, or venue"
+                        autocomplete="off"
+                    >
+                </label>
 
                 <select
                     id="event-category"
+                    name="event-category"
                     aria-label="Filter events by category"
                 >
                     <option value="">All Categories</option>
@@ -168,11 +245,12 @@
                     id="search-events-button"
                     class="primary-button"
                 >
-                    Search
+                    Search Events
                 </button>
 
             </div>
 
+            <!-- Event loading, empty, and error messages -->
             <p
                 id="browse-events-message"
                 class="section-message"
@@ -182,29 +260,44 @@
                 Upcoming events will appear here.
             </p>
 
+            <!-- JavaScript inserts event cards here -->
             <div
                 id="browse-events-list"
                 class="event-grid"
+                aria-live="polite"
             ></div>
 
         </section>
-
 
         <!-- ==================== MY REGISTRATIONS ==================== -->
         <section
             id="registered-events-section"
             class="content-section"
+            aria-labelledby="registrations-heading"
         >
 
             <div class="section-heading">
                 <div>
                     <p class="section-eyebrow">YOUR ACTIVITIES</p>
-                    <h2>My Registrations</h2>
+
+                    <h2 id="registrations-heading">
+                        My Registrations
+                    </h2>
+
                     <p>
-                        View your registered events and cancel a
-                        registration when cancellation is available.
+                        View your registered events and cancel a registration
+                        when cancellation is available.
                     </p>
                 </div>
+
+                <button
+                    type="button"
+                    id="refresh-registrations-button"
+                    class="secondary-button"
+                >
+                    <span aria-hidden="true">↻</span>
+                    Refresh
+                </button>
             </div>
 
             <p
@@ -216,29 +309,43 @@
                 Loading your registrations...
             </p>
 
+            <!-- JavaScript inserts registration records here -->
             <div
                 id="events-list"
                 class="list-container"
+                aria-live="polite"
             ></div>
 
         </section>
 
-
-        <!-- ==================== ATTENDANCE ==================== -->
+        <!-- ==================== MY ATTENDANCE ==================== -->
         <section
             id="attendance-section"
             class="content-section"
+            aria-labelledby="attendance-heading"
         >
 
             <div class="section-heading">
                 <div>
                     <p class="section-eyebrow">PARTICIPATION</p>
-                    <h2>My Attendance</h2>
+
+                    <h2 id="attendance-heading">
+                        My Attendance
+                    </h2>
+
                     <p>
-                        Review attendance records for the events
-                        you have attended.
+                        Review attendance records for the events you have attended.
                     </p>
                 </div>
+
+                <button
+                    type="button"
+                    id="refresh-attendance-button"
+                    class="secondary-button"
+                >
+                    <span aria-hidden="true">↻</span>
+                    Refresh
+                </button>
             </div>
 
             <p
@@ -250,29 +357,43 @@
                 Loading attendance records...
             </p>
 
+            <!-- JavaScript inserts attendance records here -->
             <div
                 id="attendance-list"
                 class="list-container"
+                aria-live="polite"
             ></div>
 
         </section>
 
-
-        <!-- ==================== CERTIFICATES ==================== -->
+        <!-- ==================== MY CERTIFICATES ==================== -->
         <section
             id="certificates-section"
             class="content-section"
+            aria-labelledby="certificates-heading"
         >
 
             <div class="section-heading">
                 <div>
                     <p class="section-eyebrow">ACHIEVEMENTS</p>
-                    <h2>My Certificates</h2>
+
+                    <h2 id="certificates-heading">
+                        My Certificates
+                    </h2>
+
                     <p>
-                        View and download certificates issued to you
-                        for eligible events.
+                        View and download certificates issued to you for eligible events.
                     </p>
                 </div>
+
+                <button
+                    type="button"
+                    id="refresh-certificates-button"
+                    class="secondary-button"
+                >
+                    <span aria-hidden="true">↻</span>
+                    Refresh
+                </button>
             </div>
 
             <p
@@ -284,13 +405,14 @@
                 Loading certificates...
             </p>
 
+            <!-- JavaScript inserts certificates here -->
             <div
                 id="certificates-list"
                 class="list-container"
+                aria-live="polite"
             ></div>
 
         </section>
-
 
         <!-- ==================== FOOTER ==================== -->
         <footer class="dashboard-footer">
@@ -298,12 +420,12 @@
                 &copy; <span id="current-year"></span>
                 CampusConnect | College Event Management System
             </p>
+
+            <a href="#dashboard-home">
+                Back to top ↑
+            </a>
         </footer>
 
     </main>
-
-    <script src="script.js"></script>
-
 </body>
 </html>
-```

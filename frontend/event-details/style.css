@@ -1,4 +1,8 @@
 
+/* ============================================
+   1. GLOBAL STYLES
+============================================ */
+
 * {
     margin: 0;
     padding: 0;
@@ -13,6 +17,17 @@
     --muted: #718096;
     --border: #e1e7f0;
     --white: #ffffff;
+
+    --success: #187344;
+    --success-bg: #eaf8f0;
+    --error: #b42318;
+    --error-bg: #fff0ef;
+    --warning: #946200;
+    --warning-bg: #fff7df;
+}
+
+html {
+    scroll-behavior: smooth;
 }
 
 body {
@@ -20,13 +35,25 @@ body {
     background: var(--background);
     color: var(--text);
     font-family: Arial, Helvetica, sans-serif;
+    line-height: 1.5;
 }
+
+button,
+a {
+    -webkit-tap-highlight-color: transparent;
+}
+
+
+/* ============================================
+   2. HEADER
+============================================ */
 
 .details-header {
     min-height: 78px;
     padding: 16px 6%;
     background: var(--white);
     border-bottom: 1px solid var(--border);
+
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -37,6 +64,7 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
+
     color: var(--navy);
     text-decoration: none;
 }
@@ -44,11 +72,15 @@ body {
 .brand-logo {
     width: 42px;
     height: 42px;
+    flex-shrink: 0;
+
     display: grid;
     place-items: center;
+
     border-radius: 12px;
     background: var(--navy);
-    color: white;
+    color: var(--white);
+
     font-size: 21px;
     font-weight: bold;
 }
@@ -71,12 +103,18 @@ body {
 .back-link {
     color: var(--blue);
     font-size: 14px;
+    font-weight: 600;
     text-decoration: none;
 }
 
 .back-link:hover {
     text-decoration: underline;
 }
+
+
+/* ============================================
+   3. MAIN CONTENT
+============================================ */
 
 .details-main {
     width: min(100% - 32px, 920px);
@@ -85,6 +123,7 @@ body {
 
 .eyebrow {
     margin-bottom: 9px;
+
     color: var(--blue);
     font-size: 11px;
     font-weight: bold;
@@ -94,36 +133,59 @@ body {
 .details-main > h1 {
     color: var(--navy);
     font-size: clamp(27px, 4vw, 36px);
+    line-height: 1.2;
 }
 
 .intro {
     margin-top: 10px;
     color: var(--muted);
-    line-height: 1.6;
+    line-height: 1.7;
 }
+
+
+/* ============================================
+   4. MESSAGES
+============================================ */
 
 .message {
     margin: 18px 0;
+    padding: 0;
+
     color: var(--muted);
     font-size: 14px;
-    line-height: 1.6;
+    line-height: 1.7;
     overflow-wrap: anywhere;
 }
 
-.message.error {
-    color: #b42318;
+.message:empty {
+    display: none;
+}
+
+.message.info {
+    color: var(--muted);
 }
 
 .message.success {
-    color: #187344;
+    color: var(--success);
 }
+
+.message.error {
+    color: var(--error);
+}
+
+
+/* ============================================
+   5. EVENT CARD
+============================================ */
 
 .details-card {
     margin-top: 24px;
     padding: clamp(20px, 4vw, 36px);
+
     background: var(--white);
     border: 1px solid var(--border);
     border-radius: 16px;
+
     box-shadow: 0 10px 35px rgba(23, 37, 84, 0.06);
 }
 
@@ -134,29 +196,71 @@ body {
     gap: 20px;
 }
 
+.event-heading-main {
+    min-width: 0;
+}
+
 .event-heading h2 {
     margin-top: 13px;
+
     color: var(--navy);
     font-size: clamp(23px, 3vw, 30px);
+    line-height: 1.3;
     overflow-wrap: anywhere;
 }
+
+
+/* ============================================
+   6. CATEGORY AND STATUS BADGES
+============================================ */
 
 .category-badge,
 .status-badge {
     display: inline-block;
     padding: 7px 11px;
+
     border-radius: 20px;
     background: #edf2ff;
     color: var(--blue);
+
     font-size: 12px;
     font-weight: bold;
+    line-height: 1.4;
 }
 
 .status-badge {
-    max-width: 150px;
+    max-width: 180px;
+    flex-shrink: 0;
     text-align: center;
     overflow-wrap: anywhere;
 }
+
+.status-scheduled,
+.status-approved {
+    background: var(--success-bg);
+    color: var(--success);
+}
+
+.status-pending {
+    background: var(--warning-bg);
+    color: var(--warning);
+}
+
+.status-cancelled,
+.status-rejected {
+    background: var(--error-bg);
+    color: var(--error);
+}
+
+.status-completed {
+    background: #edf2ff;
+    color: var(--blue);
+}
+
+
+/* ============================================
+   7. DIVIDER AND DESCRIPTION
+============================================ */
 
 .details-divider {
     height: 1px;
@@ -177,16 +281,23 @@ body {
     overflow-wrap: anywhere;
 }
 
+
+/* ============================================
+   8. EVENT INFORMATION GRID
+============================================ */
+
 .information-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
+
     margin-top: 28px;
 }
 
 .information-item {
     min-width: 0;
     padding: 17px;
+
     border: 1px solid var(--border);
     border-radius: 10px;
     background: #fbfcff;
@@ -195,6 +306,7 @@ body {
 .information-label {
     display: block;
     margin-bottom: 9px;
+
     color: var(--muted);
     font-size: 12px;
 }
@@ -207,65 +319,116 @@ body {
     overflow-wrap: anywhere;
 }
 
+
+/* Approval status text */
+
+.approval-approved {
+    color: var(--success) !important;
+}
+
+.approval-pending {
+    color: var(--warning) !important;
+}
+
+.approval-rejected {
+    color: var(--error) !important;
+}
+
+
+/* ============================================
+   9. ACTION BUTTONS
+============================================ */
+
 .details-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
+
     margin-top: 28px;
 }
 
 .primary-button,
 .secondary-button {
-    min-height: 42px;
+    min-height: 44px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+
     padding: 11px 17px;
+
     border: 1px solid transparent;
     border-radius: 8px;
+
     font-family: inherit;
     font-size: 14px;
     font-weight: bold;
+    line-height: 1.4;
     text-align: center;
     text-decoration: none;
+
     cursor: pointer;
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        opacity 0.2s ease;
 }
 
 .primary-button {
     background: var(--blue);
-    color: white;
+    color: var(--white);
 }
 
-.primary-button:hover {
+.primary-button:hover:not(:disabled) {
     background: var(--navy);
 }
 
 .secondary-button {
     border-color: var(--border);
-    background: white;
+    background: var(--white);
     color: var(--navy);
 }
 
 .secondary-button:hover {
     background: #edf2ff;
+    border-color: #c8d5f2;
 }
 
 .primary-button:disabled {
-    opacity: 0.6;
+    opacity: 0.65;
     cursor: not-allowed;
 }
+
+.primary-button:disabled:hover {
+    background: var(--blue);
+}
+
+
+/* ============================================
+   10. NOT-FOUND ACTIONS
+============================================ */
 
 .not-found-actions {
     margin-top: 18px;
 }
 
+
+/* ============================================
+   11. FOOTER
+============================================ */
+
 footer {
     margin-top: 40px;
     padding: 20px 0;
+
     color: var(--muted);
     font-size: 12px;
     text-align: center;
 }
+
+
+/* ============================================
+   12. ACCESSIBILITY
+============================================ */
 
 [hidden] {
     display: none !important;
@@ -277,19 +440,35 @@ a:focus-visible {
     outline-offset: 3px;
 }
 
+
+/* ============================================
+   13. TABLET AND MOBILE RESPONSIVENESS
+============================================ */
+
 @media (max-width: 600px) {
     .details-header {
         align-items: flex-start;
         flex-direction: column;
+        gap: 14px;
         padding: 16px 20px;
     }
 
     .details-main {
+        width: min(100% - 28px, 920px);
         margin-top: 28px;
+    }
+
+    .details-card {
+        padding: 20px;
     }
 
     .event-heading {
         flex-direction: column;
+        gap: 14px;
+    }
+
+    .status-badge {
+        max-width: 100%;
     }
 
     .information-grid {
@@ -302,5 +481,21 @@ a:focus-visible {
 
     .details-actions > * {
         width: 100%;
+    }
+
+    footer {
+        line-height: 1.8;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0.01ms !important;
     }
 }

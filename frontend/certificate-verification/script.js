@@ -1,271 +1,181 @@
 
 "use strict";
 
-/* =========================================================
-   1. CONFIGURATION
-========================================================= */
+// ============================================
+// 1. API CONFIGURATION
+// ============================================
 
 const API_BASE_URL = "http://localhost:5000/api";
 
-const VERIFY_API_URL = `${API_BASE_URL}/certificates/verify`;
+const API = {
+    verifyCertificate: (certificateId) =>
+        `${API_BASE_URL}/certificates/verify/${encodeURIComponent(certificateId)}`
+};
 
 
-/* =========================================================
-   2. START WHEN THE PAGE LOADS
-========================================================= */
+// ============================================
+// 2. PAGE STATE
+// ============================================
+
+let currentCertificateId = "";
+let verificationInProgress = false;
+
+
+// ============================================
+// 3. INITIALIZE PAGE
+// ============================================
 
 document.addEventListener("DOMContentLoaded", () => {
+    const yearElement = getElement("current-year");
+
+    if (yearElement) {
+        yearElement.textContent = new Date().getFullYear();
+    }
+
+    getElement("retry-button").addEventListener(
+        "click",
+        verifyCertificateFromURL
+    );
+
     verifyCertificateFromURL();
 });
 
 
-/* =========================================================
-   3. READ THE CERTIFICATE ID AND VERIFY IT
-========================================================= */
+// ============================================
+// 4. DOM HELPERS
+// ============================================
 
-async function verifyCertificateFromURL() {
-    const params = new URLSearchParams(window.location.search);
-
-    // The student dashboard passes the ID using ?id=...
-    // Also support ?certificateId=... for direct verification links.
-    const certificateId =
-        params.get("id") ||
-        params.get("certificateId");
-
-    const messageElement = getOrCreateElement(
-        "verification-message",
-        "p"
-    );
-
-    const resultContainer = getOrCreateElement(
-        "verification-result",
-        "section"
-    );
-
-    resultContainer.replaceChildren();
-
-    if (!certificateId || !certificateId.trim()) {
-        showMessage(
-            messageElement,
-            "Certificate ID is missing. Please open a valid certificate verification link.",
-            "error"
-        );
-
-        renderVerificationStatus(
-            resultContainer,
-            "Certificate not verified",
-            null,
-            "No certificate ID was provided."
-        );
-
-        return;
-    }
-
-    showMessage(
-        messageElement,
-        "Verifying certificate. Please wait...",
-        "info"
-    );
-
-    try {
-        const response = await fetch(
-            `${VERIFY_API_URL}/${encodeURIComponent(certificateId.trim())}`,
-            {
-                method: "GET",
-                headers: {
-                    Accept: "application/json"
-                }
-            }
-        );
-
-        const data = await response.json().catch(() => ({}));
-
-        // A certificate is valid only when the backend confirms it.
-        if (!response.ok || data.verified !== true) {
-            showMessage(
-                messageElement,
-                data.message || "Certificate verification failed.",
-                "error"
-            );
-
-            renderVerificationStatus(
-                resultContainer,
-                "Certificate not verified",
-                null,
-                data.message || "The certificate could not be verified."
-            );
-
-            return;
-        }
-
-        showMessage(
-            messageElement,
-            data.message || "Certificate verified successfully.",
-            "success"
-        );
-
-        renderVerificationStatus(
-            resultContainer,
-            "Certificate is valid",
-            data.certificate,
-            ""
-        );
-
-    } catch (error) {
-        console.error("Certificate verification error:", error);
-
-        showMessage(
-            messageElement,
-            "Unable to connect to the server. Make sure the backend is running on port 5000 and try again.",
-            "error"
-        );
-
-        renderVerificationStatus(
-            resultContainer,
-            "Verification unavailable",
-            null,
-            "The server could not be reached. Please try again later."
-        );
-    }
+function getElement(id) {
+    return document.getElementById(id);
 }
 
+function showMessage(message, type = "info") {
+    const element = getElement("verification-message");
 
-/* =========================================================
-   4. FIND OR CREATE AN HTML ELEMENT
-========================================================= */
-
-function getOrCreateElement(id, tagName) {
-    let element = document.getElementById(id);
-
-    if (element) {
-        return element;
-    }
-
-    element = document.createElement(tagName);
-    element.id = id;
-
-    const main =
-        document.querySelector("main") ||
-        document.querySelector(".main-content") ||
-        document.body;
-
-    main.appendChild(element);
-
-    return element;
-}
-
-
-/* =========================================================
-   5. DISPLAY A MESSAGE
-========================================================= */
-
-function showMessage(element, message, type) {
     element.textContent = message;
-    element.className = `page-message ${type}`;
+    element.className = `message ${type}`;
     element.setAttribute("role", "status");
     element.setAttribute("aria-live", "polite");
 }
 
+function setRetryButtonVisible(visible) {
+    getElement("retry-button").hidden = !visible;
+}
 
-/* =========================================================
-   6. DISPLAY VERIFICATION RESULT
-========================================================= */
+function setResultVisible(visible) {
+    getElement("certificate-result").hidden = !visible;
+}
 
-function renderVerificationStatus(
-    container,
-    heading,
-    certificate,
-    errorMessage
-) {
-    container.replaceChildren();
 
-    const card = document.createElement("article");
-    card.className = "data-item";
+// ============================================
+// 5. URL HELPERS
+// ============================================
 
-    const title = document.createElement("h2");
-    title.textContent = heading;
-    card.appendChild(title);
+function getCertificateIdFromURL() {
+    const params = new URLSearchParams(window.location.search);
 
-    if (!certificate) {
-        const message = document.createElement("p");
-        message.textContent =
-            errorMessage || "Certificate details are unavailable.";
+    return (
+        params.get("id") ||
+        params.get("certificateId") ||
+        ""
+    ).trim();
+}
 
-        card.appendChild(message);
-        container.appendChild(card);
 
-        return;
+// ============================================
+// 6. SAFE RESPONSE HELPERS
+// ============================================
+
+async function readResponse(response) {
+    const text = await response.text();
+
+    if (!text) {
+        return {};
     }
 
-    addDetail(
-        card,
-        "Certificate ID",
-        certificate.certificateId
-    );
-
-    addDetail(
-        card,
-        "Student Name",
-        certificate.studentName
-    );
-
-    addDetail(
-        card,
-        "Event Name",
-        certificate.eventTitle
-    );
-
-    addDetail(
-        card,
-        "Event Date",
-        formatDate(certificate.eventDate)
-    );
-
-    addDetail(
-        card,
-        "Venue",
-        certificate.venue
-    );
-
-    addDetail(
-        card,
-        "Issue Date",
-        formatDate(certificate.issuedAt)
-    );
-
-    container.appendChild(card);
+    try {
+        return JSON.parse(text);
+    } catch (error) {
+        return {};
+    }
 }
 
+function getCertificateFromResponse(data) {
+    if (!data || typeof data !== "object") {
+        return null;
+    }
 
-/* =========================================================
-   7. ADD A CERTIFICATE DETAIL
-========================================================= */
+    // Common response: { verified: true, certificate: {...} }
+    if (
+        data.certificate &&
+        typeof data.certificate === "object"
+    ) {
+        return data.certificate;
+    }
 
-function addDetail(container, label, value) {
-    const paragraph = document.createElement("p");
+    // Alternative response: { verified: true, data: { certificate: {...} } }
+    if (
+        data.data?.certificate &&
+        typeof data.data.certificate === "object"
+    ) {
+        return data.data.certificate;
+    }
 
-    const strong = document.createElement("strong");
-    strong.textContent = `${label}: `;
+    // Alternative response: { verified: true, data: {...certificate fields...} }
+    if (
+        data.data &&
+        typeof data.data === "object" &&
+        !Array.isArray(data.data) &&
+        (
+            data.data.certificateId ||
+            data.data.student ||
+            data.data.studentName ||
+            data.data.event
+        )
+    ) {
+        return data.data;
+    }
 
-    const span = document.createElement("span");
+    // Alternative response: certificate fields at the top level.
+    if (
+        data.certificateId ||
+        data.student ||
+        data.studentName ||
+        data.event
+    ) {
+        return data;
+    }
 
-    span.textContent =
-        value !== undefined &&
-        value !== null &&
-        value !== ""
-            ? String(value)
-            : "Not available";
-
-    paragraph.appendChild(strong);
-    paragraph.appendChild(span);
-
-    container.appendChild(paragraph);
+    return null;
 }
 
+function getDisplayValue(...values) {
+    for (const value of values) {
+        if (typeof value === "string" && value.trim()) {
+            return value.trim();
+        }
 
-/* =========================================================
-   8. FORMAT DATES
-========================================================= */
+        if (typeof value === "number") {
+            return String(value);
+        }
+
+        if (value && typeof value === "object") {
+            const nestedValue =
+                value.name ||
+                value.fullName ||
+                value.title ||
+                value.email ||
+                value.eventTitle ||
+                "";
+
+            if (nestedValue) {
+                return String(nestedValue);
+            }
+        }
+    }
+
+    return "Not available";
+}
 
 function formatDate(value) {
     if (!value) {
@@ -283,4 +193,217 @@ function formatDate(value) {
         month: "short",
         year: "numeric"
     });
+}
+
+function formatStatus(value) {
+    if (!value) {
+        return "Not available";
+    }
+
+    return String(value)
+        .replace(/[_-]+/g, " ")
+        .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+
+// ============================================
+// 7. GET CERTIFICATE DETAILS
+// ============================================
+
+function getCertificateDetails(certificate) {
+    const student = certificate?.student;
+    const event = certificate?.event;
+
+    return {
+        id: getDisplayValue(
+            certificate?.certificateId,
+            certificate?.id,
+            currentCertificateId
+        ),
+
+        recipient: getDisplayValue(
+            certificate?.studentName,
+            student?.name,
+            student?.fullName,
+            student?.email
+        ),
+
+        event: getDisplayValue(
+            certificate?.eventTitle,
+            event?.title,
+            event?.name
+        ),
+
+        issueDate: formatDate(
+            certificate?.issuedAt ||
+            certificate?.issueDate ||
+            certificate?.createdAt
+        ),
+
+        status: getDisplayValue(
+            certificate?.status,
+            "Valid"
+        )
+    };
+}
+
+
+// ============================================
+// 8. DISPLAY VERIFICATION RESULT
+// ============================================
+
+function renderVerificationResult({
+    valid,
+    title,
+    description,
+    certificate = null
+}) {
+    const icon = getElement("result-icon");
+
+    getElement("result-title").textContent = title;
+    getElement("result-description").textContent = description;
+
+    icon.className = valid
+        ? "result-icon valid"
+        : "result-icon invalid";
+
+    icon.textContent = valid ? "✓" : "✕";
+
+    const details = certificate
+        ? getCertificateDetails(certificate)
+        : {
+            id: currentCertificateId || "Not available",
+            recipient: "Not available",
+            event: "Not available",
+            issueDate: "Not available",
+            status: valid ? "Valid" : "Not verified"
+        };
+
+    getElement("certificate-id").textContent = details.id;
+    getElement("recipient-name").textContent = details.recipient;
+    getElement("event-name").textContent = details.event;
+    getElement("issue-date").textContent = details.issueDate;
+    getElement("certificate-status").textContent = details.status;
+
+    setResultVisible(true);
+}
+
+
+// ============================================
+// 9. VERIFY CERTIFICATE
+// ============================================
+
+async function verifyCertificateFromURL() {
+    if (verificationInProgress) {
+        return;
+    }
+
+    currentCertificateId = getCertificateIdFromURL();
+
+    setResultVisible(false);
+    setRetryButtonVisible(false);
+
+    if (!currentCertificateId) {
+        showMessage(
+            "Certificate ID is missing. Open a valid certificate verification link.",
+            "error"
+        );
+
+        renderVerificationResult({
+            valid: false,
+            title: "Certificate Not Verified",
+            description: "No certificate ID was provided in the URL."
+        });
+
+        return;
+    }
+
+    verificationInProgress = true;
+
+    showMessage(
+        "Verifying certificate. Please wait...",
+        "info"
+    );
+
+    try {
+        const response = await fetch(
+            API.verifyCertificate(currentCertificateId),
+            {
+                method: "GET",
+                headers: {
+                    Accept: "application/json"
+                }
+            }
+        );
+
+        const data = await readResponse(response);
+
+        // The backend must explicitly confirm validity.
+        const verified = data?.verified === true;
+
+        if (!response.ok || !verified) {
+            const message =
+                data?.message ||
+                data?.error ||
+                (
+                    response.status === 404
+                        ? "No certificate was found with this ID."
+                        : "The certificate could not be verified."
+                );
+
+            showMessage(message, "error");
+
+            renderVerificationResult({
+                valid: false,
+                title: "Certificate Not Verified",
+                description: message,
+                certificate: getCertificateFromResponse(data)
+            });
+
+            setRetryButtonVisible(
+                response.status >= 500 ||
+                response.status === 429
+            );
+
+            return;
+        }
+
+        const certificate = getCertificateFromResponse(data);
+
+        showMessage(
+            data.message || "Certificate verified successfully.",
+            "success"
+        );
+
+        renderVerificationResult({
+            valid: true,
+            title: "Certificate Is Valid",
+            description:
+                "The backend has confirmed that this certificate is valid.",
+            certificate
+        });
+
+    } catch (error) {
+        console.error(
+            "Certificate verification error:",
+            error
+        );
+
+        showMessage(
+            "Unable to connect to the server. Check that the backend is running on port 5000.",
+            "error"
+        );
+
+        renderVerificationResult({
+            valid: false,
+            title: "Verification Unavailable",
+            description:
+                "The certificate could not be verified because the server could not be reached."
+        });
+
+        setRetryButtonVisible(true);
+
+    } finally {
+        verificationInProgress = false;
+    }
 }

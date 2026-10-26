@@ -1,35 +1,50 @@
 
 "use strict";
 
-/* =====================================================
-   ADMIN ANALYTICS DASHBOARD
-   File: frontend/admin-analytics/script.js
-===================================================== */
+/*
+=========================================================
+CampusConnect — Admin Analytics Dashboard
+File: frontend/admin-analytics/script.js
+=========================================================
+
+Uses:
+GET /api/events/
+GET /api/events/pending
+
+The registrations and attendance totals are calculated only
+when the returned event data includes those counts.
+
+IMPORTANT:
+Confirm the login page path and token storage keys match
+your existing login implementation.
+*/
 
 const API_BASE_URL = "http://localhost:5000/api";
 
-/*
-  IMPORTANT:
-  Confirm these three paths against your backend routes.
-  If your route names differ, change only these constants.
-*/
 const API = {
-    dashboard: `${API_BASE_URL}/admin/dashboard`,
-    popularEvents: `${API_BASE_URL}/admin/popular-events`,
+    events: `${API_BASE_URL}/events`,
     pendingEvents: `${API_BASE_URL}/events/pending`
+};
+
+const state = {
+    events: [],
+    pendingEvents: []
 };
 
 /* =====================================================
    1. INITIALIZATION
 ===================================================== */
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", initializeDashboard);
+
+async function initializeDashboard() {
     setCurrentYear();
     loadAdminProfile();
     setupLogout();
     setupRefreshButton();
-    loadAnalytics();
-});
+
+    await loadAnalytics();
+}
 
 /* =====================================================
    2. GENERAL HELPERS
@@ -47,6 +62,7 @@ function createElement(tag, className = "", text = "") {
     }
 
     element.textContent = String(text ?? "");
+
     return element;
 }
 
@@ -73,6 +89,14 @@ function getAuthHeaders() {
     return headers;
 }
 
+function setCurrentYear() {
+    const element = getElement("current-year");
+
+    if (element) {
+        element.textContent = new Date().getFullYear();
+    }
+}
+
 function showMessage(message, type = "info") {
     const element = getElement("page-message");
 
@@ -90,14 +114,6 @@ function clearMessage() {
 
     element.textContent = "";
     element.hidden = true;
-}
-
-function setCurrentYear() {
-    const year = getElement("current-year");
-
-    if (year) {
-        year.textContent = new Date().getFullYear();
-    }
 }
 
 function formatDate(value) {
@@ -132,22 +148,31 @@ function getStatusLabel(value) {
 function getStatusClass(value) {
     const status = normalizeStatus(value);
 
-    if (["approved", "completed", "scheduled"].includes(status)) {
+    if (
+        ["approved", "completed", "scheduled", "present"]
+            .includes(status)
+    ) {
         return "approved";
     }
 
-    if (["pending", "awaiting_approval"].includes(status)) {
+    if (
+        ["pending", "awaiting_approval"]
+            .includes(status)
+    ) {
         return "pending";
     }
 
-    if (["rejected", "cancelled", "canceled"].includes(status)) {
+    if (
+        ["rejected", "cancelled", "canceled"]
+            .includes(status)
+    ) {
         return "rejected";
     }
 
     return "other";
 }
 
-function getArray(response, keys = []) {
+function getArray(response, possibleKeys = []) {
     if (Array.isArray(response)) {
         return response;
     }
@@ -156,14 +181,22 @@ function getArray(response, keys = []) {
         return [];
     }
 
-    for (const key of keys) {
+    for (const key of possibleKeys) {
         if (Array.isArray(response[key])) {
             return response[key];
         }
     }
 
-    if (response.data && Array.isArray(response.data)) {
+    if (Array.isArray(response.data)) {
         return response.data;
+    }
+
+    if (response.data && typeof response.data === "object") {
+        for (const key of possibleKeys) {
+            if (Array.isArray(response.data[key])) {
+                return response.data[key];
+            }
+        }
     }
 
     return [];
@@ -184,10 +217,6 @@ function getNumber(object, keys) {
     }
 
     return null;
-}
-
-function getEventId(event) {
-    return String(event?._id || event?.id || event?.eventId || "");
 }
 
 function getEventTitle(event) {
@@ -220,12 +249,16 @@ function getAttendanceCount(event) {
 }
 
 /* =====================================================
-   3. AUTHENTICATION
+   3. AUTHENTICATION AND API REQUESTS
 ===================================================== */
 
 function checkLogin() {
     if (!getToken()) {
-        window.location.href = "../login/index.html";
+        showMessage(
+            "Login token not found. Please log in before opening Admin Analytics.",
+            "error"
+        );
+
         return false;
     }
 
@@ -238,26 +271,35 @@ async function apiRequest(url) {
         headers: getAuthHeaders()
     });
 
-    const contentType = response.headers.get("content-type") || "";
+    const contentType =
+        response.headers.get("content-type") || "";
+
     let data = null;
 
     if (contentType.includes("application/json")) {
         data = await response.json();
     } else {
-        const text = await response.text();
-        data = text ? { message: text } : null;
+        const responseText = await response.text();
+
+        if (responseText) {
+            data = { message: responseText };
+        }
     }
 
     if (response.status === 401) {
         clearAuthData();
-        window.location.href = "../login/index.html";
 
-        throw new Error("Your session has expired. Please log in again.");
+        showMessage(
+            "Your session has expired. Please log in again.",
+            "error"
+        );
+
+        throw new Error("Unauthorized: HTTP 401");
     }
 
     if (response.status === 403) {
         throw new Error(
-            "Access denied. This page is intended for authorized administrators."
+            "Access denied. Your account may not have administrator permissions."
         );
     }
 
@@ -265,7 +307,7 @@ async function apiRequest(url) {
         throw new Error(
             data?.message ||
             data?.error ||
-            `Request failed with status ${response.status}.`
+            `API request failed with HTTP ${response.status}.`
         );
     }
 
@@ -276,6 +318,8 @@ function clearAuthData() {
     [
         "token",
         "authToken",
+        "accessToken",
+        "userToken",
         "user",
         "currentUser"
     ].forEach(key => {
@@ -289,10 +333,9 @@ function clearAuthData() {
 ===================================================== */
 
 function loadAdminProfile() {
-    const possibleKeys = ["user", "currentUser"];
     let user = null;
 
-    for (const key of possibleKeys) {
+    for (const key of ["user", "currentUser"]) {
         const stored =
             localStorage.getItem(key) ||
             sessionStorage.getItem(key);
@@ -305,12 +348,17 @@ function loadAdminProfile() {
             if (user && typeof user === "object") {
                 break;
             }
-        } catch (error) {
+        } catch {
             user = null;
         }
     }
 
-    const name = user?.name || user?.fullName || "Administrator";
+    const name =
+        user?.name ||
+        user?.fullName ||
+        user?.username ||
+        "Administrator";
+
     const role = user?.role || "Admin";
 
     const nameElement = getElement("admin-name");
@@ -357,85 +405,127 @@ function setupRefreshButton() {
 ===================================================== */
 
 async function loadAnalytics() {
-    if (!checkLogin()) return;
-
     clearMessage();
 
+    if (!checkLogin()) return;
+
+    showLoadingState();
+
     const results = await Promise.allSettled([
-        apiRequest(API.dashboard),
-        apiRequest(API.popularEvents),
+        apiRequest(API.events),
         apiRequest(API.pendingEvents)
     ]);
 
-    const dashboardResult = results[0];
-    const popularResult = results[1];
-    const pendingResult = results[2];
+    const eventsResult = results[0];
+    const pendingResult = results[1];
 
     let failures = 0;
 
-    if (dashboardResult.status === "fulfilled") {
-        renderDashboardStats(dashboardResult.value);
-        renderEventStatusChart(dashboardResult.value);
-    } else {
-        failures++;
-        console.error("Dashboard API error:", dashboardResult.reason);
-        renderStatsUnavailable();
-    }
-
-    let popularEvents = [];
-
-    if (popularResult.status === "fulfilled") {
-        popularEvents = getArray(popularResult.value, [
-            "popularEvents",
+    if (eventsResult.status === "fulfilled") {
+        state.events = getArray(eventsResult.value, [
             "events",
             "results"
         ]);
 
-        renderPopularEvents(popularEvents);
-        renderPerformanceChart(popularEvents);
+        renderDashboardStats(state.events, null);
+        renderPopularEvents(state.events);
+        renderPerformanceChart(state.events);
+        renderEventStatusChart(state.events);
     } else {
         failures++;
-        console.error("Popular events API error:", popularResult.reason);
+
+        console.error(
+            "Events API error:",
+            eventsResult.reason
+        );
+
+        state.events = [];
+
+        renderStatsUnavailable();
         renderPopularEvents([]);
         renderPerformanceChart([]);
+        renderEventStatusChart([]);
     }
 
     if (pendingResult.status === "fulfilled") {
-        const pendingEvents = getArray(pendingResult.value, [
+        state.pendingEvents = getArray(pendingResult.value, [
             "events",
             "pendingEvents",
             "results"
         ]);
 
-        renderPendingEvents(pendingEvents);
-        updatePendingCount(pendingEvents.length);
+        renderPendingEvents(state.pendingEvents);
+        updatePendingCount(state.pendingEvents.length);
     } else {
         failures++;
-        console.error("Pending events API error:", pendingResult.reason);
+
+        console.error(
+            "Pending events API error:",
+            pendingResult.reason
+        );
+
+        state.pendingEvents = [];
+
         renderPendingEvents([]);
         updatePendingCount(0);
     }
 
     if (failures === 0) {
-        showMessage("Analytics loaded successfully.", "success");
+        showMessage(
+            "Event data loaded. Registration and attendance totals appear only when supported by the returned data.",
+            "success"
+        );
     } else {
         showMessage(
-            `${failures} analytics request(s) failed. Check the browser console and verify the API paths and response formats.`,
+            `${failures} API request(s) failed. Check the browser console and Network tab for the exact backend error.`,
             "error"
         );
+    }
+}
+
+function showLoadingState() {
+    updateStat("total-events", "Loading...");
+    updateStat("pending-events", "Loading...");
+    updateStat("total-registrations", "—");
+    updateStat("total-attendance", "—");
+
+    const popularBody = getElement("popular-events-body");
+    const pendingBody = getElement("pending-events-body");
+
+    if (popularBody) {
+        popularBody.replaceChildren();
+
+        const row = createElement("tr");
+        const cell = createElement(
+            "td",
+            "empty-state",
+            "Loading events..."
+        );
+
+        cell.colSpan = 4;
+        row.appendChild(cell);
+        popularBody.appendChild(row);
+    }
+
+    if (pendingBody) {
+        pendingBody.replaceChildren();
+
+        const row = createElement("tr");
+        const cell = createElement(
+            "td",
+            "empty-state",
+            "Loading pending events..."
+        );
+
+        cell.colSpan = 5;
+        row.appendChild(cell);
+        pendingBody.appendChild(row);
     }
 }
 
 /* =====================================================
    7. DASHBOARD STATISTICS
 ===================================================== */
-
-function renderStatsUnavailable() {
-    updateStat("total-events", "—");
-    updateStat("pending-events", "—");
-    updateStat("total-registrations", "—");
-    updateStat("total-attendance", "—");
-}
 
 function updateStat(id, value) {
     const element = getElement(id);
@@ -445,61 +535,53 @@ function updateStat(id, value) {
     }
 }
 
-function renderDashboardStats(response) {
-    const stats = response?.stats ||
-        response?.statistics ||
-        response?.dashboard ||
-        response?.data ||
-        response ||
-        {};
+function renderStatsUnavailable() {
+    updateStat("total-events", "—");
+    updateStat("pending-events", "—");
+    updateStat("total-registrations", "—");
+    updateStat("total-attendance", "—");
+}
 
-    const totalEvents = getNumber(stats, [
-        "totalEvents",
-        "totalEventCount",
-        "eventCount",
-        "total_events"
-    ]);
+function renderDashboardStats(events, pendingEvents) {
+    updateStat("total-events", events.length);
 
-    const pendingEvents = getNumber(stats, [
-        "pendingEvents",
-        "pendingApprovals",
-        "pendingEventCount",
-        "pending_events"
-    ]);
+    if (Array.isArray(pendingEvents)) {
+        updateStat("pending-events", pendingEvents.length);
+    } else {
+        const pendingCount = events.filter(event =>
+            normalizeStatus(event.approvalStatus) === "pending"
+        ).length;
 
-    const registrations = getNumber(stats, [
-        "totalRegistrations",
-        "registrationCount",
-        "totalRegistrationsCount",
-        "total_registrations"
-    ]);
+        updateStat("pending-events", pendingCount);
+    }
 
-    const attendance = getNumber(stats, [
-        "totalAttendance",
-        "totalAttendees",
-        "attendanceCount",
-        "totalPresent",
-        "total_attendance"
-    ]);
+    /*
+      Do not invent registration/attendance totals.
+      These fields are not guaranteed by the event list API.
+    */
+    const registrationCounts = events.map(getRegistrationCount);
+    const attendanceCounts = events.map(getAttendanceCount);
 
-    updateStat(
-        "total-events",
-        totalEvents === null ? "—" : totalEvents
-    );
+    const allRegistrationCountsAvailable =
+        events.length > 0 &&
+        registrationCounts.every(value => value !== null);
 
-    updateStat(
-        "pending-events",
-        pendingEvents === null ? "—" : pendingEvents
-    );
+    const allAttendanceCountsAvailable =
+        events.length > 0 &&
+        attendanceCounts.every(value => value !== null);
 
     updateStat(
         "total-registrations",
-        registrations === null ? "—" : registrations
+        allRegistrationCountsAvailable
+            ? registrationCounts.reduce((sum, value) => sum + value, 0)
+            : "—"
     );
 
     updateStat(
         "total-attendance",
-        attendance === null ? "—" : attendance
+        allAttendanceCountsAvailable
+            ? attendanceCounts.reduce((sum, value) => sum + value, 0)
+            : "—"
     );
 }
 
@@ -519,7 +601,7 @@ function renderPopularEvents(events) {
         const cell = createElement(
             "td",
             "empty-state",
-            "No popular event data is available."
+            "No events were returned by the API."
         );
 
         cell.colSpan = 4;
@@ -528,7 +610,18 @@ function renderPopularEvents(events) {
         return;
     }
 
-    events.forEach(event => {
+    const sortedEvents = [...events].sort((a, b) => {
+        const countA = getRegistrationCount(a);
+        const countB = getRegistrationCount(b);
+
+        if (countA === null && countB === null) return 0;
+        if (countA === null) return 1;
+        if (countB === null) return -1;
+
+        return countB - countA;
+    });
+
+    sortedEvents.slice(0, 10).forEach(event => {
         const row = createElement("tr");
 
         const titleCell = createElement(
@@ -551,15 +644,20 @@ function renderPopularEvents(events) {
             registrationCount === null ? "—" : registrationCount
         );
 
-        const status = event.approvalStatus || event.status || "Unknown";
-        const statusCell = createElement("td");
-        const badge = createElement(
-            "span",
-            `status-badge ${getStatusClass(status)}`,
-            getStatusLabel(status)
-        );
+        const status =
+            event.approvalStatus ||
+            event.status ||
+            "Unknown";
 
-        statusCell.appendChild(badge);
+        const statusCell = createElement("td");
+
+        statusCell.appendChild(
+            createElement(
+                "span",
+                `status-badge ${getStatusClass(status)}`,
+                getStatusLabel(status)
+            )
+        );
 
         row.append(
             titleCell,
@@ -624,8 +722,9 @@ function renderPendingEvents(events) {
             event.venue || "Not specified"
         );
 
-        const status = event.approvalStatus || "pending";
         const statusCell = createElement("td");
+
+        const status = event.approvalStatus || "pending";
 
         statusCell.appendChild(
             createElement(
@@ -653,6 +752,8 @@ function updatePendingCount(count) {
     if (element) {
         element.textContent = String(count);
     }
+
+    updateStat("pending-events", count);
 }
 
 /* =====================================================
@@ -676,21 +777,22 @@ function renderPerformanceChart(events) {
                 "No event performance data is available."
             )
         );
+
         return;
     }
 
-    const validRegistrationCounts = chartEvents
+    const registrationCounts = chartEvents
         .map(getRegistrationCount)
         .filter(value => value !== null);
 
-    const validAttendanceCounts = chartEvents
+    const attendanceCounts = chartEvents
         .map(getAttendanceCount)
         .filter(value => value !== null);
 
     const maxValue = Math.max(
         1,
-        ...validRegistrationCounts,
-        ...validAttendanceCounts
+        ...registrationCounts,
+        ...attendanceCounts
     );
 
     chartEvents.forEach(event => {
@@ -714,7 +816,7 @@ function renderPerformanceChart(events) {
                 createElement(
                     "div",
                     "bar-value",
-                    "Registration and attendance counts unavailable"
+                    "Counts unavailable"
                 )
             );
         } else {
@@ -779,96 +881,42 @@ function createBar(type, value, maxValue, label) {
    11. EVENT STATUS CHART
 ===================================================== */
 
-function renderEventStatusChart(response) {
+function renderEventStatusChart(events) {
     const container = getElement("status-chart");
 
     if (!container) return;
 
     container.replaceChildren();
 
-    const stats = response?.stats ||
-        response?.statistics ||
-        response?.dashboard ||
-        response?.data ||
-        response ||
-        {};
-
-    const statusCounts = stats.eventStatuses ||
-        stats.statusCounts ||
-        stats.eventsByStatus ||
-        null;
-
-    if (
-        statusCounts &&
-        typeof statusCounts === "object" &&
-        !Array.isArray(statusCounts)
-    ) {
-        const entries = Object.entries(statusCounts)
-            .filter(([, value]) => Number.isFinite(Number(value)));
-
-        if (entries.length) {
-            const total = entries.reduce(
-                (sum, [, value]) => sum + Number(value),
-                0
-            );
-
-            entries.forEach(([status, count]) => {
-                container.appendChild(
-                    createStatusRow(status, Number(count), total)
-                );
-            });
-
-            return;
-        }
-    }
-
-    // If the dashboard endpoint does not provide status counts,
-    // show the available aggregate counts without inventing data.
-    const total = getNumber(stats, [
-        "totalEvents",
-        "totalEventCount",
-        "eventCount"
-    ]);
-
-    const pending = getNumber(stats, [
-        "pendingEvents",
-        "pendingApprovals",
-        "pendingEventCount"
-    ]);
-
-    if (total === null && pending === null) {
+    if (!events.length) {
         container.appendChild(
             createElement(
                 "p",
                 "empty-state",
-                "The dashboard API does not provide event status counts yet."
+                "No event status data is available."
             )
         );
 
         return;
     }
 
-    if (pending !== null) {
-        container.appendChild(
-            createStatusRow(
-                "Pending",
-                pending,
-                total === null ? pending : total
-            )
-        );
-    }
+    const counts = {};
 
-    if (total !== null && pending !== null) {
-        const otherEvents = Math.max(0, total - pending);
-
-        container.appendChild(
-            createStatusRow(
-                "Non-pending",
-                otherEvents,
-                total
-            )
+    events.forEach(event => {
+        const status = normalizeStatus(
+            event.approvalStatus || event.status || "unknown"
         );
-    }
+
+        counts[status] = (counts[status] || 0) + 1;
+    });
+
+    const total = events.length;
+
+    Object.entries(counts).forEach(([status, count]) => {
+        container.appendChild(
+            createStatusRow(status, count, total)
+        );
+    });
 }
 
 function createStatusRow(status, count, total) {
@@ -876,12 +924,13 @@ function createStatusRow(status, count, total) {
 
     const heading = createElement("div", "status-heading");
 
-    const label = createElement("span", "", getStatusLabel(status));
-    const number = createElement("strong", "", count);
-
-    heading.append(label, number);
+    heading.append(
+        createElement("span", "", getStatusLabel(status)),
+        createElement("strong", "", count)
+    );
 
     const track = createElement("div", "status-track");
+
     const fill = createElement(
         "div",
         `status-fill ${getStatusClass(status)}`
@@ -909,12 +958,18 @@ function setupLogout() {
     if (!button) return;
 
     button.addEventListener("click", () => {
-        const confirmed = window.confirm("Are you sure you want to log out?");
+        const confirmed = window.confirm(
+            "Are you sure you want to log out?"
+        );
 
         if (!confirmed) return;
 
         clearAuthData();
 
+        /*
+          Change this path if your login page is somewhere else.
+          This assumes frontend/login/index.html.
+        */
         window.location.href = "../login/index.html";
     });
 }

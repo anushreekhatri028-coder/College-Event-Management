@@ -1,26 +1,66 @@
+
+/* ============================================
+   1. GLOBAL STYLES
+============================================ */
+
 * {
     box-sizing: border-box;
 }
 
-body {
-    margin: 0;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    font-family: Arial, Helvetica, sans-serif;
-    color: #1f2937;
-    background: #f3f6fb;
+:root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --background: #f3f6fb;
+    --white: #ffffff;
+
+    --success: #166534;
+    --success-bg: #f0fdf4;
+    --success-border: #bbf7d0;
+
+    --error: #991b1b;
+    --error-bg: #fef2f2;
+    --error-border: #fecaca;
+
+    --info: #1e40af;
+    --info-bg: #eff6ff;
+    --info-border: #bfdbfe;
 }
 
+html {
+    min-height: 100%;
+}
+
+body {
+    min-height: 100vh;
+    margin: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    font-family: Arial, Helvetica, sans-serif;
+    color: var(--text);
+    background: var(--background);
+    line-height: 1.5;
+}
+
+
+/* ============================================
+   2. HEADER
+============================================ */
+
 .verification-header {
-    background: #ffffff;
-    border-bottom: 1px solid #e5e7eb;
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
 }
 
 .header-content {
     width: min(1100px, 92%);
     min-height: 72px;
     margin: auto;
+
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -28,10 +68,28 @@ body {
 }
 
 .brand {
-    color: #1d4ed8;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+
+    color: var(--primary-dark);
     font-weight: 700;
     font-size: 20px;
     text-decoration: none;
+}
+
+.brand-logo {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 10px;
+    background: #172554;
+    color: var(--white);
+    font-size: 18px;
 }
 
 .back-link {
@@ -41,8 +99,14 @@ body {
 }
 
 .back-link:hover {
-    color: #1d4ed8;
+    color: var(--primary-dark);
+    text-decoration: underline;
 }
+
+
+/* ============================================
+   3. MAIN CONTENT
+============================================ */
 
 .verification-main {
     flex: 1;
@@ -52,15 +116,18 @@ body {
 
 .verification-card {
     padding: 32px;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
+
+    background: var(--white);
+    border: 1px solid var(--border);
     border-radius: 16px;
+
     box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
 }
 
 .eyebrow {
     margin: 0 0 10px;
-    color: #2563eb;
+
+    color: var(--primary);
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 1.5px;
@@ -69,47 +136,78 @@ body {
 h1 {
     margin: 0;
     font-size: clamp(26px, 4vw, 34px);
+    line-height: 1.25;
 }
 
 .intro {
     margin: 14px 0 24px;
-    color: #6b7280;
+    color: var(--muted);
     line-height: 1.7;
 }
 
+
+/* ============================================
+   4. VERIFICATION MESSAGES
+============================================ */
+
 .message {
+    margin: 0 0 20px;
     padding: 14px 16px;
-    margin-bottom: 20px;
+
+    border: 1px solid var(--info-border);
     border-radius: 8px;
-    background: #eff6ff;
-    color: #1e40af;
-    line-height: 1.5;
+
+    background: var(--info-bg);
+    color: var(--info);
+
+    font-size: 14px;
+    line-height: 1.6;
     overflow-wrap: anywhere;
 }
 
+.message.info {
+    border-color: var(--info-border);
+    background: var(--info-bg);
+    color: var(--info);
+}
+
 .message.error {
-    background: #fef2f2;
-    color: #991b1b;
+    border-color: var(--error-border);
+    background: var(--error-bg);
+    color: var(--error);
 }
 
 .message.success {
-    background: #f0fdf4;
-    color: #166534;
+    border-color: var(--success-border);
+    background: var(--success-bg);
+    color: var(--success);
 }
 
+
+/* ============================================
+   5. CERTIFICATE RESULT
+============================================ */
+
 .certificate-result {
-    margin-top: 20px;
+    margin-top: 24px;
+    animation: appear 0.2s ease-out;
 }
 
 .result-icon {
     width: 54px;
     height: 54px;
+    margin-bottom: 16px;
+
     display: flex;
     align-items: center;
     justify-content: center;
+
     border-radius: 50%;
     font-size: 28px;
     font-weight: 700;
+}
+
+.result-icon.valid {
     background: #dcfce7;
     color: #166534;
 }
@@ -120,17 +218,29 @@ h1 {
 }
 
 .certificate-result h2 {
-    margin: 18px 0 8px;
+    margin: 0 0 8px;
+    font-size: 23px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
 }
 
 #result-description {
-    color: #6b7280;
-    line-height: 1.6;
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
 }
+
+
+/* ============================================
+   6. CERTIFICATE DETAILS
+============================================ */
 
 .certificate-details {
     margin-top: 24px;
-    border: 1px solid #e5e7eb;
+
+    border: 1px solid var(--border);
     border-radius: 10px;
     overflow: hidden;
 }
@@ -138,9 +248,11 @@ h1 {
 .detail-row {
     display: flex;
     justify-content: space-between;
+    align-items: flex-start;
     gap: 20px;
+
     padding: 15px 16px;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--border);
 }
 
 .detail-row:last-child {
@@ -148,67 +260,155 @@ h1 {
 }
 
 .detail-row span {
-    color: #6b7280;
+    flex: 0 0 38%;
+    color: var(--muted);
+    font-size: 14px;
 }
 
 .detail-row strong {
+    flex: 1;
+    min-width: 0;
+
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
     text-align: right;
     overflow-wrap: anywhere;
 }
 
-#retry-button,
-.dashboard-button {
-    display: inline-block;
+
+/* ============================================
+   7. ACTION BUTTONS
+============================================ */
+
+.verification-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+
     margin-top: 24px;
+}
+
+.retry-button,
+.dashboard-button {
+    min-height: 44px;
     padding: 12px 18px;
-    border: 1px solid #2563eb;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid var(--primary);
     border-radius: 8px;
+
+    font-family: inherit;
     font-size: 14px;
     font-weight: 600;
+    line-height: 1.4;
+    text-align: center;
     text-decoration: none;
+
     cursor: pointer;
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease;
 }
 
-#retry-button {
-    background: #2563eb;
-    color: #ffffff;
+.retry-button {
+    background: var(--primary);
+    color: var(--white);
+}
+
+.retry-button:hover {
+    background: var(--primary-dark);
 }
 
 .dashboard-button {
-    margin-left: 8px;
-    background: #ffffff;
-    color: #1d4ed8;
-}
-
-#retry-button:hover {
-    background: #1d4ed8;
+    background: var(--white);
+    color: var(--primary-dark);
 }
 
 .dashboard-button:hover {
-    background: #eff6ff;
+    background: var(--info-bg);
 }
+
+
+/* ============================================
+   8. FOOTER
+============================================ */
 
 .verification-footer {
     padding: 20px;
-    color: #6b7280;
+    color: var(--muted);
     text-align: center;
     font-size: 13px;
 }
 
+.verification-footer p {
+    margin: 0;
+}
+
+
+/* ============================================
+   9. ACCESSIBILITY
+============================================ */
+
+[hidden] {
+    display: none !important;
+}
+
+a:focus-visible,
+button:focus-visible {
+    outline: 3px solid #93b4ff;
+    outline-offset: 3px;
+}
+
+
+/* ============================================
+   10. ANIMATION
+============================================ */
+
+@keyframes appear {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* ============================================
+   11. MOBILE RESPONSIVENESS
+============================================ */
+
 @media (max-width: 520px) {
     .header-content {
         min-height: 64px;
+        padding: 12px 0;
     }
 
     .brand {
-        font-size: 17px;
+        gap: 7px;
+        font-size: 16px;
+    }
+
+    .brand-logo {
+        width: 32px;
+        height: 32px;
     }
 
     .back-link {
         font-size: 12px;
+        text-align: right;
     }
 
     .verification-main {
+        width: 92%;
         margin: 24px auto;
     }
 
@@ -216,16 +416,42 @@ h1 {
         padding: 22px 18px;
     }
 
+    .certificate-result h2 {
+        font-size: 21px;
+    }
+
     .detail-row {
         flex-direction: column;
-        gap: 6px;
+        gap: 5px;
+    }
+
+    .detail-row span {
+        flex-basis: auto;
     }
 
     .detail-row strong {
+        width: 100%;
         text-align: left;
     }
 
+    .verification-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .retry-button,
     .dashboard-button {
-        margin-left: 0;
+        width: 100%;
+        margin: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
     }
 }

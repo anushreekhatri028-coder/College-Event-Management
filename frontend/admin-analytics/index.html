@@ -4,11 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="description"
+        content="CampusConnect admin analytics dashboard for monitoring college events, registrations, and attendance."
+    >
+    <meta name="theme-color" content="#5145cd">
 
-    <title>Admin Analytics | College Event Management</title>
+    <title>Admin Analytics | CampusConnect</title>
 
-    <link rel="stylesheet" href="style.css">
-    <script src="script.js" defer></script>
+    <!-- Admin analytics stylesheet -->
+    <link rel="stylesheet" href="./style.css">
+
+    <!-- Load JavaScript after HTML parsing -->
+    <script src="./script.js" defer></script>
 </head>
 
 <body>
@@ -16,146 +24,224 @@
 
         <!-- Sidebar -->
         <aside class="sidebar">
-            <a href="#" class="brand">
+            <a href="./index.html" class="brand" aria-label="CampusConnect Admin Dashboard">
                 <span class="brand-icon">C</span>
+
                 <span>
-                    <strong>CampusHub</strong>
+                    <strong>CampusConnect</strong>
                     <small>Event Management</small>
                 </span>
             </a>
 
             <div class="sidebar-label">ADMINISTRATION</div>
 
-            <nav class="sidebar-nav">
-                <a href="index.html" class="nav-link active">
-                    <span class="nav-icon">▦</span>
+            <nav class="sidebar-nav" aria-label="Main navigation">
+                <a href="./index.html" class="nav-link active" aria-current="page">
+                    <span class="nav-icon" aria-hidden="true">▦</span>
                     Analytics Dashboard
                 </a>
 
                 <a href="../student-dashboard/index.html" class="nav-link">
-                    <span class="nav-icon">◉</span>
+                    <span class="nav-icon" aria-hidden="true">◉</span>
                     Student Dashboard
                 </a>
             </nav>
 
+            <!-- Administrator profile and logout -->
             <div class="sidebar-bottom">
                 <div class="admin-profile">
                     <div class="admin-avatar" id="admin-avatar">A</div>
+
                     <div class="admin-info">
                         <strong id="admin-name">Administrator</strong>
                         <small id="admin-role">Admin</small>
                     </div>
                 </div>
 
-                <button id="logout-button" class="logout-button" type="button">
-                    ↪ Logout
+                <button
+                    id="logout-button"
+                    class="logout-button"
+                    type="button"
+                >
+                    <span aria-hidden="true">↪</span>
+                    Logout
                 </button>
             </div>
         </aside>
 
-        <!-- Main content -->
+        <!-- Main dashboard -->
         <main class="main-content">
 
+            <!-- Page heading -->
             <header class="topbar">
                 <div>
                     <p class="eyebrow">OVERVIEW</p>
+
                     <h1>Analytics Dashboard</h1>
+
                     <p class="page-subtitle">
                         Monitor college events, registrations and attendance.
                     </p>
                 </div>
 
-                <button id="refresh-button" class="button button-secondary"
-                        type="button">
-                    ↻ Refresh Data
+                <button
+                    id="refresh-button"
+                    class="button button-secondary"
+                    type="button"
+                >
+                    <span aria-hidden="true">↻</span>
+                    Refresh Data
                 </button>
             </header>
 
-            <div id="page-message" class="message" role="status" hidden></div>
+            <!-- Global success and error messages -->
+            <div
+                id="page-message"
+                class="message"
+                role="status"
+                aria-live="polite"
+                hidden
+            ></div>
 
-            <!-- Summary cards -->
-            <section class="stats-grid" aria-label="Event statistics">
-
+            <!-- Summary statistics -->
+            <section
+                class="stats-grid"
+                aria-label="Event statistics"
+            >
                 <article class="stat-card">
                     <div class="stat-top">
                         <span class="stat-label">Total Events</span>
-                        <span class="stat-icon purple">▦</span>
+                        <span class="stat-icon purple" aria-hidden="true">▦</span>
                     </div>
+
                     <h2 id="total-events">—</h2>
-                    <p class="stat-description">Events in the system</p>
+
+                    <p class="stat-description">
+                        Events in the system
+                    </p>
                 </article>
 
                 <article class="stat-card">
                     <div class="stat-top">
                         <span class="stat-label">Pending Approvals</span>
-                        <span class="stat-icon orange">◷</span>
+                        <span class="stat-icon orange" aria-hidden="true">◷</span>
                     </div>
+
                     <h2 id="pending-events">—</h2>
-                    <p class="stat-description">Events awaiting review</p>
+
+                    <p class="stat-description">
+                        Events awaiting review
+                    </p>
                 </article>
 
                 <article class="stat-card">
                     <div class="stat-top">
                         <span class="stat-label">Registrations</span>
-                        <span class="stat-icon blue">♙</span>
+                        <span class="stat-icon blue" aria-hidden="true">♙</span>
                     </div>
+
                     <h2 id="total-registrations">—</h2>
-                    <p class="stat-description">Event registration records</p>
+
+                    <p class="stat-description">
+                        Event registration records
+                    </p>
                 </article>
 
                 <article class="stat-card">
                     <div class="stat-top">
                         <span class="stat-label">Attendance</span>
-                        <span class="stat-icon green">✓</span>
+                        <span class="stat-icon green" aria-hidden="true">✓</span>
                     </div>
-                    <h2 id="total-attendance">—</h2>
-                    <p class="stat-description">Recorded attendance</p>
-                </article>
 
+                    <h2 id="total-attendance">—</h2>
+
+                    <p class="stat-description">
+                        Recorded attendance
+                    </p>
+                </article>
             </section>
 
-            <!-- Charts -->
-            <section class="charts-grid">
+            <!-- Analytics charts -->
+            <section
+                class="charts-grid"
+                aria-label="Event analytics charts"
+            >
 
+                <!-- Event performance chart -->
                 <article class="panel">
                     <div class="panel-header">
                         <div>
                             <h2>Event Performance</h2>
-                            <p>Registration and attendance by event</p>
+
+                            <p>
+                                Registration and attendance by event
+                            </p>
                         </div>
                     </div>
 
-                    <div id="performance-chart" class="chart-area">
-                        <p class="empty-state">Loading event performance...</p>
+                    <div
+                        id="performance-chart"
+                        class="chart-area"
+                        aria-live="polite"
+                    >
+                        <p class="empty-state">
+                            Loading event performance...
+                        </p>
                     </div>
 
                     <div class="chart-legend">
-                        <span><i class="legend-dot registrations-dot"></i> Registrations</span>
-                        <span><i class="legend-dot attendance-dot"></i> Attendance</span>
+                        <span>
+                            <i
+                                class="legend-dot registrations-dot"
+                                aria-hidden="true"
+                            ></i>
+                            Registrations
+                        </span>
+
+                        <span>
+                            <i
+                                class="legend-dot attendance-dot"
+                                aria-hidden="true"
+                            ></i>
+                            Attendance
+                        </span>
                     </div>
                 </article>
 
+                <!-- Event approval status chart -->
                 <article class="panel">
                     <div class="panel-header">
                         <div>
                             <h2>Event Overview</h2>
-                            <p>Current event approval statuses</p>
+
+                            <p>
+                                Current event approval statuses
+                            </p>
                         </div>
                     </div>
 
-                    <div id="status-chart" class="status-chart">
-                        <p class="empty-state">Loading event statuses...</p>
+                    <div
+                        id="status-chart"
+                        class="status-chart"
+                        aria-live="polite"
+                    >
+                        <p class="empty-state">
+                            Loading event statuses...
+                        </p>
                     </div>
                 </article>
 
             </section>
 
-            <!-- Popular events -->
+            <!-- Popular events table -->
             <section class="panel table-panel">
                 <div class="panel-header">
                     <div>
                         <h2>Popular Events</h2>
-                        <p>Events ranked by registration activity when available</p>
+
+                        <p>
+                            Events ranked by registration activity when available
+                        </p>
                     </div>
                 </div>
 
@@ -163,12 +249,13 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Event</th>
-                                <th>Category</th>
-                                <th>Registrations</th>
-                                <th>Status</th>
+                                <th scope="col">Event</th>
+                                <th scope="col">Category</th>
+                                <th scope="col">Registrations</th>
+                                <th scope="col">Status</th>
                             </tr>
                         </thead>
+
                         <tbody id="popular-events-body">
                             <tr>
                                 <td colspan="4" class="empty-state">
@@ -180,27 +267,36 @@
                 </div>
             </section>
 
-            <!-- Pending approvals -->
+            <!-- Pending event approvals table -->
             <section class="panel table-panel">
                 <div class="panel-header">
                     <div>
                         <h2>Pending Event Approvals</h2>
-                        <p>Events awaiting an administrator's review</p>
+
+                        <p>
+                            Events awaiting an administrator's review
+                        </p>
                     </div>
-                    <span id="pending-count" class="count-badge">0</span>
+
+                    <span
+                        id="pending-count"
+                        class="count-badge"
+                        aria-label="Number of pending events"
+                    >0</span>
                 </div>
 
                 <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr>
-                                <th>Event</th>
-                                <th>Category</th>
-                                <th>Date</th>
-                                <th>Venue</th>
-                                <th>Status</th>
+                                <th scope="col">Event</th>
+                                <th scope="col">Category</th>
+                                <th scope="col">Date</th>
+                                <th scope="col">Venue</th>
+                                <th scope="col">Status</th>
                             </tr>
                         </thead>
+
                         <tbody id="pending-events-body">
                             <tr>
                                 <td colspan="5" class="empty-state">
@@ -212,9 +308,13 @@
                 </div>
             </section>
 
+            <!-- Footer -->
             <footer class="footer">
-                <span>CampusHub · Admin Analytics</span>
-                <span>© <span id="current-year"></span></span>
+                <span>CampusConnect · Admin Analytics</span>
+
+                <span>
+                    © <span id="current-year"></span>
+                </span>
             </footer>
 
         </main>
