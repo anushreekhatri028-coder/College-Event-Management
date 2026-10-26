@@ -1,0 +1,188 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#09090f">
+    <title>Sign In | CampusConnect</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <main class="page-shell">
+        <section class="login-layout">
+            <aside class="brand-panel">
+                <a class="brand" href="../student-dashboard/index.html"
+                   aria-label="CampusConnect home">
+                    <span class="brand-mark">C<span>+</span></span>
+                    <span>Campus<span class="brand-light">Connect</span></span>
+                </a>
+
+                <div class="brand-content">
+                    <span class="eyebrow">
+                        <span class="status-dot"></span>
+                        YOUR CAMPUS. YOUR COMMUNITY.
+                    </span>
+
+                    <h1>Make your<br>campus life<br><span>count.</span></h1>
+
+                    <p class="brand-description">
+                        Discover events, connect with clubs, and make
+                        every campus moment memorable.
+                    </p>
+
+                    <div class="feature-list">
+                        <div class="feature">
+                            <span class="feature-icon">✦</span>
+                            <div>
+                                <strong>Discover what's happening</strong>
+                                <p>Find events that match your interests.</p>
+                            </div>
+                        </div>
+
+                        <div class="feature">
+                            <span class="feature-icon">↗</span>
+                            <div>
+                                <strong>Be part of something</strong>
+                                <p>Join clubs and meet your community.</p>
+                            </div>
+                        </div>
+
+                        <div class="feature">
+                            <span class="feature-icon">✓</span>
+                            <div>
+                                <strong>Everything in one place</strong>
+                                <p>Manage registrations and certificates.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="brand-footer">
+                    <span class="footer-line"></span>
+                    <span>BUILT FOR CAMPUS LIFE</span>
+                </div>
+            </aside>
+
+            <section class="form-panel" aria-labelledby="login-title">
+                <div class="mobile-brand">
+                    <span class="brand-mark">C<span>+</span></span>
+                    <span>Campus<span class="brand-light">Connect</span></span>
+                </div>
+
+                <div class="login-card">
+                    <div class="welcome-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M12 3.5 20 7.5 12 11.5 4 7.5 12 3.5Z"
+                                  stroke="currentColor" stroke-width="1.6"
+                                  stroke-linejoin="round"/>
+                            <path d="M7 9.2V14c0 1.4 2.2 3 5 3s5-1.6 5-3V9.2"
+                                  stroke="currentColor" stroke-width="1.6"/>
+                            <path d="M20 7.5V13"
+                                  stroke="currentColor" stroke-width="1.6"
+                                  stroke-linecap="round"/>
+                        </svg>
+                    </div>
+
+                    <p class="form-eyebrow">WELCOME BACK</p>
+                    <h2 id="login-title">Sign in to your account</h2>
+                    <p class="form-subtitle">
+                        Your next campus experience starts here.
+                    </p>
+
+                    <form id="login-form" novalidate>
+                        <div class="form-field">
+                            <label for="email">Email address</label>
+                            <div class="input-wrap">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <rect x="3.5" y="5.5" width="17" height="13"
+                                          rx="2.5"/>
+                                    <path d="m5 7 7 5.5L19 7"/>
+                                </svg>
+                                <input
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    placeholder="you@college.edu"
+                                    autocomplete="username"
+                                    inputmode="email"
+                                    maxlength="254"
+                                    required
+                                    aria-describedby="email-error"
+                                >
+                            </div>
+                            <p class="field-error" id="email-error"></p>
+                        </div>
+
+                        <div class="form-field">
+                            <div class="label-row">
+                                <label for="password">Password</label>
+                            </div>
+                            <div class="input-wrap">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <rect x="4.5" y="10" width="15"
+                                          height="10" rx="2.2"/>
+                                    <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+                                    <path d="M12 14v2.5"/>
+                                </svg>
+                                <input
+                                    id="password"
+                                    name="password"
+                                    type="password"
+                                    placeholder="Enter your password"
+                                    autocomplete="current-password"
+                                    maxlength="128"
+                                    required
+                                    aria-describedby="password-error"
+                                >
+                                <button
+                                    class="password-toggle"
+                                    id="password-toggle"
+                                    type="button"
+                                    aria-label="Show password"
+                                    aria-pressed="false"
+                                >
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"/>
+                                        <circle cx="12" cy="12" r="2.5"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <p class="field-error" id="password-error"></p>
+                        </div>
+
+                        <div
+                            class="alert"
+                            id="login-message"
+                            role="alert"
+                            aria-live="polite"
+                            hidden
+                        ></div>
+
+                        <button class="submit-button" id="login-button" type="submit">
+                            <span class="button-label">Sign in</span>
+                            <span class="button-arrow" aria-hidden="true">→</span>
+                            <span class="button-spinner" aria-hidden="true"></span>
+                        </button>
+                    </form>
+
+                    <div class="security-note">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 3 19 6v5c0 4.6-2.9 7.7-7 10-4.1-2.3-7-5.4-7-10V6l7-3Z"/>
+                            <path d="m9 12 2 2 4-4"/>
+                        </svg>
+                        <span>Your account is protected by secure authentication.</span>
+                    </div>
+                </div>
+
+                <footer class="form-footer">
+                    <span>© <span id="current-year"></span> CampusConnect</span>
+                    <span class="footer-separator">•</span>
+                    <span>Made for your campus community</span>
+                </footer>
+            </section>
+        </section>
+    </main>
+</body>
+</html>
