@@ -1,7 +1,8 @@
-
+const { OAuth2Client } = require("google-auth-library");
 const bcrypt = require("bcryptjs");
 const User = require("../models/user.model");
 const jwt = require("jsonwebtoken");
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 function getAllowedEmailDomains() {
     const configuredDomains = process.env.COLLEGE_EMAIL_DOMAINS;
@@ -129,7 +130,116 @@ const loginUser = async (email, password) => {
     };
 };
 
+// Google Sign-In
+const googleLoginUser = async (credential) => {
+    if (!credential) {
+        throw new Error("Google credential is required");
+    }
+
+    if (!process.env.GOOGLE_CLIENT_ID) {
+        throw new Error("Google Client ID is not configured");
+    }
+
+    if (!process.env.JWT_SECRET) {
+        throw new Error("JWT_SECRET is not configured");
+    }
+
+    // 1. Verify Google ID token
+    const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID
+    });
+
+    const payload = ticket.getPayload();
+
+    if (!payload) {
+        throw new Error("Invalid Google token");
+    }
+
+    const {
+        sub: googleId,
+        email,
+        email_verified,
+        name,
+        picture
+    } = payload;
+
+    // 2. Check verified email
+    if (!email || email_verified !== true) {
+        throw new Error("Please use a verified Google account");
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // 3. Restrict sign-in to college email domains
+    const allowedDomains = (process.env.COLLEGE_EMAIL_DOMAINS || "")
+        .split(",")
+        .map(domain => domain.trim().toLowerCase())
+        .filter(Boolean);
+
+    const emailDomain = normalizedEmail.split("@")[1];
+
+    if (!allowedDomains.includes(emailDomain)) {
+        throw new Error("Please use your college Google account");
+    }
+
+    // 4. Find user by Google ID first
+    let user = await User.findOne({ googleId });
+
+    // 5. If not found, check whether this email already exists
+    if (!user) {
+        user = await User.findOne({ email: normalizedEmail });
+
+        if (user) {
+            // Do not link an email already connected to another Google ID
+            if (user.googleId && user.googleId !== googleId) {
+                throw new Error("This account is linked to another Google account");
+            }
+
+            // Link Google account to existing user.
+            // Keep the existing role unchanged.
+            user.googleId = googleId;
+            user.profilePicture = picture || user.profilePicture || "";
+
+            await user.save();
+        } else {
+            // 6. Create a new student account
+            user = await User.create({
+                name: name || normalizedEmail.split("@")[0],
+                email: normalizedEmail,
+                googleId,
+                profilePicture: picture || "",
+                role: "student"
+            });
+        }
+    }
+
+    // 7. Generate the existing CampusConnect JWT format
+    const token = jwt.sign(
+        {
+            userId: user._id,
+            role: user.role
+        },
+        process.env.JWT_SECRET,
+        {
+            expiresIn: "1d"
+        }
+    );
+
+    return {
+        token,
+        user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            profilePicture: user.profilePicture || ""
+        }
+    };
+};
+
 module.exports = {
     registerUser,
-    loginUser
+    loginUser,
+    googleLoginUser
 };

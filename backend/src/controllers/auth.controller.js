@@ -109,8 +109,56 @@ const login = async (req, res) => {
     }
 };
 
+const googleLogin = async (req, res) => {
+    try {
+        const { credential } = req.body;
+
+        if (!credential) {
+            return res.status(400).json({
+                success: false,
+                message: "Google credential is required"
+            });
+        }
+
+        const result = await authService.googleLoginUser(credential);
+
+        return res.status(200).json({
+            success: true,
+            message: "Google login successful",
+            token: result.token,
+            user: result.user
+        });
+
+    } catch (error) {
+        console.error("Google Login Error:", error.message);
+
+        const clientErrors = [
+            "Google credential is required",
+            "Google Client ID is not configured",
+            "JWT_SECRET is not configured",
+            "Invalid Google token",
+            "Please use a verified Google account",
+            "Please use your college Google account",
+            "This account is linked to another Google account"
+        ];
+
+        if (clientErrors.includes(error.message)) {
+            return res.status(401).json({
+                success: false,
+                message: error.message
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            message: "Google login failed"
+        });
+    }
+};
+
 // IMPORTANT: These names must match auth.routes.js
 module.exports = {
     register,
-    login
+    login,
+    googleLogin
 };
