@@ -1,26 +1,45 @@
 
 "use strict";
 
-const API_BASE_URL = "http://localhost:5000/api";
-const LOGIN_ENDPOINT = `${API_BASE_URL}/auth/login`;
+// ==========================================
+// 1. API CONFIGURATION
+// ==========================================
 
-/*
- * Update these paths if your actual dashboard locations differ.
- * Student and administrator pages are based on the paths used
- * elsewhere in your CampusConnect frontend.
- */
+const API_BASE_URL = "http://localhost:5000/api";
+
+const LOGIN_ENDPOINT = `${API_BASE_URL}/auth/login`;
+const GOOGLE_LOGIN_ENDPOINT = `${API_BASE_URL}/auth/google`;
+
+// ==========================================
+// 2. GOOGLE CONFIGURATION
+// ==========================================
+
+const GOOGLE_CLIENT_ID =
+    "1064890540077-e4df6khuiv78j5e20nt5g7vq5iqq6qbr.apps.googleusercontent.com";
+
+// ==========================================
+// 3. ROLE-BASED REDIRECTS
+// ==========================================
+
 const ROLE_REDIRECTS = {
     student: "../student-dashboard/index.html",
+    organizer: "../student-dashboard/index.html",
     faculty: "../admin-analytics/index.html",
     dean: "../admin-analytics/index.html",
     superadmin: "../admin-analytics/index.html"
 };
+
+// ==========================================
+// 4. INITIALIZATION
+// ==========================================
 
 document.addEventListener("DOMContentLoaded", () => {
     setCurrentYear();
     setupPasswordToggle();
     setupInputValidation();
     setupLoginForm();
+
+    initializeGoogleSignIn();
 });
 
 function $(id) {
@@ -35,7 +54,9 @@ function setCurrentYear() {
     }
 }
 
-/* ---------------- PASSWORD VISIBILITY ---------------- */
+// ==========================================
+// 5. PASSWORD VISIBILITY
+// ==========================================
 
 function setupPasswordToggle() {
     const passwordInput = $("password");
@@ -47,33 +68,43 @@ function setupPasswordToggle() {
         const shouldShow = passwordInput.type === "password";
 
         passwordInput.type = shouldShow ? "text" : "password";
+
         toggleButton.setAttribute(
             "aria-label",
             shouldShow ? "Hide password" : "Show password"
         );
-        toggleButton.setAttribute("aria-pressed", String(shouldShow));
+
+        toggleButton.setAttribute(
+            "aria-pressed",
+            String(shouldShow)
+        );
     });
 }
 
-/* ---------------- VALIDATION ---------------- */
+// ==========================================
+// 6. INPUT VALIDATION
+// ==========================================
 
 function setupInputValidation() {
     const emailInput = $("email");
     const passwordInput = $("password");
 
-    emailInput.addEventListener("input", () => {
-        clearFieldError("email");
-        hideLoginMessage();
-    });
+    if (emailInput) {
+        emailInput.addEventListener("input", () => {
+            clearFieldError("email");
+            hideLoginMessage();
+        });
+    }
 
-    passwordInput.addEventListener("input", () => {
-        clearFieldError("password");
-        hideLoginMessage();
-    });
+    if (passwordInput) {
+        passwordInput.addEventListener("input", () => {
+            clearFieldError("password");
+            hideLoginMessage();
+        });
+    }
 }
 
 function validateEmail(email) {
-    // Basic format validation. The backend remains authoritative.
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
@@ -105,10 +136,17 @@ function setFieldError(field, message) {
     const input = $(field);
     const inputWrap = input?.closest(".input-wrap");
 
-    if (errorElement) errorElement.textContent = message;
+    if (errorElement) {
+        errorElement.textContent = message;
+    }
 
-    if (input) input.setAttribute("aria-invalid", "true");
-    if (inputWrap) inputWrap.classList.add("has-error");
+    if (input) {
+        input.setAttribute("aria-invalid", "true");
+    }
+
+    if (inputWrap) {
+        inputWrap.classList.add("has-error");
+    }
 }
 
 function clearFieldError(field) {
@@ -116,13 +154,22 @@ function clearFieldError(field) {
     const input = $(field);
     const inputWrap = input?.closest(".input-wrap");
 
-    if (errorElement) errorElement.textContent = "";
+    if (errorElement) {
+        errorElement.textContent = "";
+    }
 
-    if (input) input.removeAttribute("aria-invalid");
-    if (inputWrap) inputWrap.classList.remove("has-error");
+    if (input) {
+        input.removeAttribute("aria-invalid");
+    }
+
+    if (inputWrap) {
+        inputWrap.classList.remove("has-error");
+    }
 }
 
-/* ---------------- STATUS MESSAGES ---------------- */
+// ==========================================
+// 7. STATUS MESSAGES
+// ==========================================
 
 function showLoginMessage(message, type = "error") {
     const messageElement = $("login-message");
@@ -130,9 +177,9 @@ function showLoginMessage(message, type = "error") {
     if (!messageElement) return;
 
     messageElement.textContent = message;
-    messageElement.className = type === "success"
-        ? "alert success"
-        : "alert";
+
+    messageElement.className =
+        type === "success" ? "alert success" : "alert";
 
     messageElement.hidden = false;
 }
@@ -147,27 +194,33 @@ function hideLoginMessage() {
     messageElement.className = "alert";
 }
 
-/* ---------------- LOADING STATE ---------------- */
+// ==========================================
+// 8. LOADING STATE
+// ==========================================
 
 function setLoading(isLoading) {
     const button = $("login-button");
-    const label = button?.querySelector(".button-label");
 
-    if (!button || !label) return;
+    if (!button) return;
+
+    const label = button.querySelector("span:first-child");
 
     button.disabled = isLoading;
     button.classList.toggle("is-loading", isLoading);
     button.setAttribute("aria-busy", String(isLoading));
-    label.textContent = isLoading ? "Signing in..." : "Sign in";
+
+    if (label) {
+        label.textContent = isLoading
+            ? "Signing in..."
+            : "Sign in to CampusConnect";
+    }
 }
 
-/* ---------------- AUTHENTICATION ---------------- */
+// ==========================================
+// 9. AUTHENTICATION STORAGE
+// ==========================================
 
 function saveLoginData(token, user) {
-    /*
-     * Keep the storage keys compatible with the existing dashboard.
-     * Clear stale authentication data first so old tokens are not reused.
-     */
     clearLoginData();
 
     localStorage.setItem("token", token);
@@ -184,20 +237,46 @@ function clearLoginData() {
         "loggedInUser"
     ];
 
-    for (const key of keys) {
+    keys.forEach((key) => {
         localStorage.removeItem(key);
         sessionStorage.removeItem(key);
-    }
+    });
 }
 
+// ==========================================
+// 10. ROLE-BASED REDIRECT
+// ==========================================
+
 function getSafeRedirectPath(role) {
-    const normalizedRole = String(role || "").trim().toLowerCase();
+    const normalizedRole = String(role || "")
+        .trim()
+        .toLowerCase();
+
     return ROLE_REDIRECTS[normalizedRole] || null;
 }
 
+function redirectUser(user) {
+    const destination = getSafeRedirectPath(user.role);
+
+    if (!destination) {
+        clearLoginData();
+
+        throw new Error(
+            `Your account role "${user.role}" does not have a configured dashboard. Please contact your administrator.`
+        );
+    }
+
+    window.location.assign(destination);
+}
+
+// ==========================================
+// 11. SERVER ERROR HANDLING
+// ==========================================
+
 function getServerErrorMessage(data, status) {
     if (status === 401) {
-        return "Incorrect email or password. Please try again.";
+        return data?.message ||
+            "Incorrect email/password or Google authentication failed.";
     }
 
     if (status === 403) {
@@ -210,11 +289,13 @@ function getServerErrorMessage(data, status) {
     }
 
     if (status >= 500) {
-        return "The server encountered a problem. Please try again later.";
+        return data?.message ||
+            "The server encountered a problem. Please try again later.";
     }
 
     if (status === 400) {
-        return data?.message || "Please check your email and password.";
+        return data?.message ||
+            "Please check your login information.";
     }
 
     return data?.message ||
@@ -222,51 +303,31 @@ function getServerErrorMessage(data, status) {
         `Login failed (HTTP ${status}). Please try again.`;
 }
 
-async function login(email, password) {
-    let response;
+// ==========================================
+// 12. API RESPONSE HANDLING
+// ==========================================
 
-    try {
-        response = await fetch(LOGIN_ENDPOINT, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            },
-            body: JSON.stringify({ email, password })
-        });
-    } catch {
-        throw new Error(
-            "Cannot connect to CampusConnect. Make sure your backend is running on port 5000."
-        );
-    }
-
+async function parseApiResponse(response) {
     const responseText = await response.text();
+
     let data = {};
 
     if (responseText) {
         try {
             data = JSON.parse(responseText);
         } catch {
-            if (response.ok) {
-                throw new Error(
-                    "The server returned an unexpected response. Please try again."
-                );
-            }
+            throw new Error(
+                "The server returned an invalid response. Please try again."
+            );
         }
     }
 
-    if (!response.ok) {
-        throw new Error(getServerErrorMessage(data, response.status));
+    if (!response.ok || data.success === false) {
+        throw new Error(
+            getServerErrorMessage(data, response.status)
+        );
     }
 
-    /*
-     * Expected backend response:
-     * {
-     *   message: "Login successful",
-     *   token: "...",
-     *   user: { id, name, email, role }
-     * }
-     */
     if (
         typeof data.token !== "string" ||
         !data.token ||
@@ -275,34 +336,47 @@ async function login(email, password) {
         !data.user.role
     ) {
         throw new Error(
-            "Login response is missing the expected token or user role. Please check the backend response."
+            "The server response is missing the expected token or user information."
         );
     }
 
     return data;
 }
 
-/* ---------------- ROLE-BASED REDIRECT ---------------- */
+// ==========================================
+// 13. EMAIL AND PASSWORD LOGIN
+// ==========================================
 
-function redirectUser(user) {
-    const destination = getSafeRedirectPath(user.role);
+async function login(email, password) {
+    let response;
 
-    if (!destination) {
-        /*
-         * Do not guess a destination for an unconfigured role.
-         * Clear the newly stored credentials and display a useful message.
-         */
-        clearLoginData();
+    try {
+        response = await fetch(LOGIN_ENDPOINT, {
+            method: "POST",
 
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+
+            body: JSON.stringify({
+                email,
+                password
+            })
+        });
+
+    } catch {
         throw new Error(
-            `Your account role "${user.role}" does not have a configured dashboard. Please contact your administrator.`
+            "Cannot connect to CampusConnect. Make sure your backend is running on port 5000."
         );
     }
 
-    window.location.assign(destination);
+    return await parseApiResponse(response);
 }
 
-/* ---------------- FORM SUBMISSION ---------------- */
+// ==========================================
+// 14. LOGIN FORM SUBMISSION
+// ==========================================
 
 function setupLoginForm() {
     const form = $("login-form");
@@ -314,6 +388,8 @@ function setupLoginForm() {
 
         const emailInput = $("email");
         const passwordInput = $("password");
+
+        if (!emailInput || !passwordInput) return;
 
         const email = emailInput.value.trim();
         const password = passwordInput.value;
@@ -333,14 +409,171 @@ function setupLoginForm() {
             const data = await login(email, password);
 
             saveLoginData(data.token, data.user);
+
             redirectUser(data.user);
+
         } catch (error) {
             showLoginMessage(
                 error?.message ||
                 "Something went wrong. Please try again."
             );
+
         } finally {
             setLoading(false);
         }
     });
 }
+
+// ==========================================
+// 15. GOOGLE SIGN-IN INITIALIZATION
+// ==========================================
+
+let googleSignInInitialized = false;
+
+function initializeGoogleSignIn() {
+    if (googleSignInInitialized) return;
+
+    // Check Google library.
+    if (
+        !window.google ||
+        !window.google.accounts ||
+        !window.google.accounts.id
+    ) {
+        console.warn(
+            "Google Identity Services is not loaded yet."
+        );
+        return;
+    }
+
+    // Check Client ID.
+    if (!GOOGLE_CLIENT_ID) {
+        console.error("Google Client ID is missing.");
+        return;
+    }
+
+    const buttonContainer = $("google-signin-button");
+
+    if (!buttonContainer) {
+        console.error(
+            "Google Sign-In button container not found in index.html."
+        );
+        return;
+    }
+
+    try {
+        window.google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: handleGoogleCredentialResponse,
+            auto_select: false
+        });
+
+        buttonContainer.innerHTML = "";
+
+        window.google.accounts.id.renderButton(
+            buttonContainer,
+            {
+                type: "standard",
+                theme: "outline",
+                size: "large",
+                text: "continue_with",
+                shape: "rectangular",
+                width: 280
+            }
+        );
+
+        googleSignInInitialized = true;
+
+        console.log(
+            "Google Sign-In initialized successfully."
+        );
+
+    } catch (error) {
+        console.error(
+            "Google Sign-In initialization failed:",
+            error
+        );
+
+        showLoginMessage(
+            "Unable to load Google Sign-In. Please refresh the page."
+        );
+    }
+}
+
+// Make initialization function available globally.
+window.initializeGoogleSignIn = initializeGoogleSignIn;
+
+// ==========================================
+// 16. HANDLE GOOGLE LOGIN RESPONSE
+// ==========================================
+
+async function handleGoogleCredentialResponse(response) {
+    if (!response || !response.credential) {
+        showLoginMessage(
+            "Google authentication failed. Please try again."
+        );
+        return;
+    }
+
+    const buttonContainer = $("google-signin-button");
+
+    if (buttonContainer) {
+        buttonContainer.style.pointerEvents = "none";
+        buttonContainer.style.opacity = "0.6";
+    }
+
+    hideLoginMessage();
+
+    try {
+        let googleResponse;
+
+        try {
+            googleResponse = await fetch(GOOGLE_LOGIN_ENDPOINT, {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+
+                body: JSON.stringify({
+                    credential: response.credential
+                })
+            });
+
+        } catch {
+            throw new Error(
+                "Cannot connect to CampusConnect. Make sure your backend is running on port 5000."
+            );
+        }
+
+        const data = await parseApiResponse(googleResponse);
+
+        saveLoginData(data.token, data.user);
+
+        redirectUser(data.user);
+
+    } catch (error) {
+        console.error("Google Sign-In Error:", error);
+
+        showLoginMessage(
+            error?.message ||
+            "Unable to sign in with Google. Please try again."
+        );
+
+    } finally {
+        if (buttonContainer) {
+            buttonContainer.style.pointerEvents = "";
+            buttonContainer.style.opacity = "";
+        }
+    }
+}
+
+// ==========================================
+// 17. GOOGLE SCRIPT LOAD EVENT
+// ==========================================
+
+window.addEventListener("load", () => {
+    initializeGoogleSignIn();
+});
+
+console.log("CampusConnect login script loaded successfully.");

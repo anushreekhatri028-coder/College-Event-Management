@@ -1,0 +1,127 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#100e19">
+    <title>Create Student Account | CampusConnect</title>
+    <link rel="stylesheet" href="./style.css">
+    <script src="./script.js" defer></script>
+</head>
+<body>
+    <main class="auth-layout">
+        <section class="brand-panel">
+            <a class="brand" href="../login/index.html">
+                <span class="brand-icon">C</span>
+                <span>CampusConnect</span>
+            </a>
+
+            <p class="eyebrow">YOUR CAMPUS. YOUR COMMUNITY.</p>
+
+            <h1>Make your campus life <span>count.</span></h1>
+
+            <p class="intro">
+                Join your campus community, discover events, connect
+                with clubs and keep every campus moment in one place.
+            </p>
+
+            <div class="feature">
+                <span>✦</span>
+                <div>
+                    <strong>Discover events</strong>
+                    <p>Find campus activities that interest you.</p>
+                </div>
+            </div>
+
+            <div class="feature">
+                <span>↗</span>
+                <div>
+                    <strong>Join your community</strong>
+                    <p>Connect with clubs and fellow students.</p>
+                </div>
+            </div>
+
+            <div class="feature">
+                <span>✓</span>
+                <div>
+                    <strong>Everything in one place</strong>
+                    <p>Manage registrations and certificates.</p>
+                </div>
+            </div>
+
+            <p class="footer-note">BUILT FOR CAMPUS LIFE</p>
+        </section>
+
+        <section class="form-panel">
+            <div class="form-content">
+                <div class="icon-box">♧</div>
+                <p class="eyebrow">JOIN CAMPUSCONNECT</p>
+                <h2>Create your student account</h2>
+                <p class="subtitle">
+                    Use your official college email to get started.
+                </p>
+
+                <div id="register-message"
+                     class="message"
+                     role="status"
+                     aria-live="polite"
+                     hidden></div>
+
+                <form id="register-form">
+                    <label for="name">Full name</label>
+                    <input id="name"
+                           name="name"
+                           type="text"
+                           placeholder="Enter your full name"
+                           autocomplete="name"
+                           maxlength="100"
+                           required>
+
+                    <label for="email">College email address</label>
+                    <input id="email"
+                           name="email"
+                           type="email"
+                           placeholder="you@college.edu"
+                           autocomplete="email"
+                           required>
+
+                    <label for="password">Password</label>
+                    <input id="password"
+                           name="password"
+                           type="password"
+                           placeholder="At least 8 characters"
+                           autocomplete="new-password"
+                           minlength="8"
+                           required>
+
+                    <label for="confirm-password">Confirm password</label>
+                    <input id="confirm-password"
+                           name="confirm-password"
+                           type="password"
+                           placeholder="Enter your password again"
+                           autocomplete="new-password"
+                           minlength="8"
+                           required>
+
+                    <button id="register-button" type="submit">
+                        <span>Create student account</span>
+                        <span aria-hidden="true">→</span>
+                    </button>
+                </form>
+
+                <p class="security-note">
+                    ◈ Public registration creates student accounts only.
+                </p>
+
+                <p class="login-link">
+                    Already registered?
+                    <a href="../login/index.html">Sign in</a>
+                </p>
+            </div>
+
+            <footer>© <span id="current-year"></span> CampusConnect</footer>
+        </section>
+    </main>
+</body>
+</html>
