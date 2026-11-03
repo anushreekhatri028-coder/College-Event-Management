@@ -21,116 +21,157 @@ const {
     cancelEvent
 } = require("../controllers/event.controller");
 
+// ============================================================
+// AUTHENTICATION
+// ============================================================
 
+// All event routes require a valid login.
+router.use(protect);
+
+
+// ============================================================
 // CREATE EVENT
+// ============================================================
+
+// Only the current appointed president can create an event.
+// The controller also verifies that the president belongs to the club.
 router.post(
     "/",
-    protect,
-    authorize("organizer", "faculty", "dean", "superadmin"),
+    authorize("organizer"),
     createEvent
 );
 
 
+// ============================================================
 // GET PENDING EVENTS
-// Keep this before /:id
+// ============================================================
+
+// Faculty can see pending events only for clubs they coordinate.
+// Dean and superadmin can see all pending events.
 router.get(
     "/pending",
-    protect,
     authorize("faculty", "dean", "superadmin"),
     getPendingEvents
 );
 
 
+// ============================================================
 // GET UPCOMING EVENTS
+// ============================================================
+
 router.get(
     "/upcoming",
-    protect,
     getUpcomingEvents
 );
 
 
+// ============================================================
 // SEARCH EVENTS
+// ============================================================
+
 router.get(
     "/search",
-    protect,
     searchEvents
 );
 
 
+// ============================================================
 // GET EVENTS FOR A PARTICULAR CLUB
+// ============================================================
+
 router.get(
     "/club/:clubId",
-    protect,
     validateObjectId("clubId"),
     getClubEvents
 );
 
 
+// ============================================================
 // APPROVE EVENT
+// ============================================================
+
+// Only faculty coordinators, dean and superadmin can approve.
+// The controller verifies that faculty coordinates this club.
 router.patch(
     "/:id/approve",
-    protect,
     authorize("faculty", "dean", "superadmin"),
     validateObjectId("id"),
     approveEvent
 );
 
 
+// ============================================================
 // REJECT EVENT
+// ============================================================
+
 router.patch(
     "/:id/reject",
-    protect,
     authorize("faculty", "dean", "superadmin"),
     validateObjectId("id"),
     rejectEvent
 );
 
 
+// ============================================================
 // CANCEL EVENT
+// ============================================================
+
+// The controller checks club ownership/coordination permissions.
 router.patch(
     "/:id/cancel",
-    protect,
     authorize("organizer", "faculty", "dean", "superadmin"),
     validateObjectId("id"),
     cancelEvent
 );
 
 
+// ============================================================
 // GET A SINGLE EVENT
+// ============================================================
+
 router.get(
     "/:id",
-    protect,
     validateObjectId("id"),
     getEventById
 );
 
 
+// ============================================================
 // UPDATE EVENT
+// ============================================================
+
 router.put(
     "/:id",
-    protect,
     authorize("organizer", "faculty", "dean", "superadmin"),
     validateObjectId("id"),
     updateEvent
 );
 
 
+// ============================================================
 // DELETE EVENT
+// ============================================================
+
 router.delete(
     "/:id",
-    protect,
     authorize("organizer", "faculty", "dean", "superadmin"),
     validateObjectId("id"),
     deleteEvent
 );
 
 
+// ============================================================
 // GET ALL EVENTS
+// ============================================================
+
 router.get(
     "/",
-    protect,
     getEvents
 );
 
+
+// ============================================================
+// EXPORT ROUTER
+// ============================================================
 
 module.exports = router;

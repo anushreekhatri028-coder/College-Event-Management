@@ -1,3 +1,4 @@
+
 const mongoose = require("mongoose");
 
 const clubSchema = new mongoose.Schema(
@@ -19,15 +20,18 @@ const clubSchema = new mongoose.Schema(
             required: true
         },
 
+        // Current appointed student president
         president: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
-            required: true
+            default: null
         },
 
+        // Faculty responsible for this club
         facultyCoordinator: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "User"
+            ref: "User",
+            required: true
         }
     },
     {
