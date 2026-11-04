@@ -14,6 +14,7 @@ const feedbackRoutes = require("./routes/feedback.routes");
 const analyticsRoutes = require("./routes/analytics.routes");
 const waitlistRoutes = require("./routes/waitlist.routes");
 const certificateRoutes = require("./routes/certificate.routes");
+const facultyRoutes = require("./routes/faculty.routes");
 
 const app = express();
 
@@ -28,6 +29,8 @@ app.use(
         allowedHeaders: ["Content-Type", "Authorization"]
     })
 );
+
+app.use("/api/faculty", facultyRoutes);
 
 // Parse incoming JSON requests
 app.use(express.json());
