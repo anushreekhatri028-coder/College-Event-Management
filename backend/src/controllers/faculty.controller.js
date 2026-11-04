@@ -394,7 +394,71 @@ const getPresidentHistory = async (req, res) => {
     }
 };
 
+
+// --------------------------------------------------
+// 5. CREATE A NEW CLUB
+// POST /api/faculty/clubs
+// --------------------------------------------------
+const createClub = async (req, res) => {
+    try {
+        const { name, description, category } = req.body;
+        const facultyId = req.user.userId;
+
+        // Validate required fields.
+        if (!name || !description || !category) {
+            return res.status(400).json({
+                success: false,
+                message: "Name, description and category are required"
+            });
+        }
+
+        // Check for an existing club with the same name.
+        const existingClub = await Club.findOne({
+            name: name.trim()
+        });
+
+        if (existingClub) {
+            return res.status(409).json({
+                success: false,
+                message: "A club with this name already exists"
+            });
+        }
+
+        // Create club with the logged-in faculty as coordinator.
+        const club = await Club.create({
+            name: name.trim(),
+            description: description.trim(),
+            category: category.trim(),
+            facultyCoordinator: facultyId,
+            president: null
+        });
+
+        return res.status(201).json({
+            success: true,
+            message: "Club created successfully",
+            club
+        });
+
+    } catch (error) {
+        console.error("Create club error:", error);
+
+        if (error.code === 11000) {
+            return res.status(409).json({
+                success: false,
+                message: "A club with this name already exists"
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to create club"
+        });
+    }
+};
+
+
 module.exports = {
+    createClub,
     getMyClubs,
     appointPresident,
     removePresident,

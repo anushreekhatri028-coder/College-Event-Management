@@ -6,6 +6,7 @@ const protect = require("../middleware/auth.middleware");
 const authorize = require("../middleware/role.middleware");
 
 const {
+    createClub,
     getMyClubs,
     appointPresident,
     removePresident,
@@ -15,7 +16,8 @@ const {
 // Every faculty route requires authentication and faculty role.
 router.use(protect);
 router.use(authorize("faculty"));
-
+// Create a club.
+router.post("/clubs", createClub);
 // Get clubs assigned to logged-in faculty.
 router.get("/clubs", getMyClubs);
 
